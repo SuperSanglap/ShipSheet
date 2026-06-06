@@ -55,7 +55,7 @@ cd shipsheet
 ### 2. Install dependencies
 
 ```bash
-pip install flask pymupdf pillow reportlab
+pip install -r requirements.txt
 ```
 
 ### 3. Run
