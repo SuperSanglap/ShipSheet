@@ -48,14 +48,14 @@ ShipSheet lets you:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/sanglap/shipsheet.git
+git clone https://github.com/supersanglap/shipsheet.git
 cd shipsheet
 ```
 
 ### 2. Install dependencies
 
 ```bash
-pip install flask pymupdf pillow reportlab
+pip install -r requirements.txt
 ```
 
 ### 3. Run
