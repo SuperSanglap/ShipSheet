@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ShipSheet</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #c8f03d;
+    --accent-dim: #8aad1a;
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --text-muted: #555;
+    --danger: #ff5252;
+    --success: #4cffb0;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  header .logo {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: 4px;
+    display: grid; place-items: center;
+  }
+  header .logo svg { width: 20px; height: 20px; }
+  header h1 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--text);
+  }
+  header span.tag {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    flex: 1;
+    display: flex;
+    gap: 0;
+  }
+
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 22px;
+    overflow-y: auto;
+  }
+
+  .workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    gap: 20px;
+    overflow: auto;
+  }
+
+  /* ── SECTION LABELS ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(200,240,61,.04);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-zone .icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+  .upload-zone .file-name {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    border: none;
+    user-select: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #111;
+    width: 100%;
+  }
+  .btn-primary:hover { background: #d9ff52; }
+  .btn-primary:disabled { background: #2e3d00; color: #5a6a20; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    width: 100%;
+  }
+  .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid rgba(255,82,82,.3);
+    width: 100%;
+  }
+  .btn-danger:hover { background: rgba(255,82,82,.08); }
+
+  .btn-success {
+    background: var(--success);
+    color: #0a2a1e;
+    width: 100%;
+  }
+  .btn-success:hover { background: #6effca; }
+
+  /* ── GRID SELECTOR ── */
+  .grid-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .grid-btn {
+    aspect-ratio: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+  }
+  .grid-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(200,240,61,.06); }
+  .grid-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,240,61,.12); }
+  .grid-btn .mini-grid {
+    display: grid;
+    gap: 1.5px;
+    width: 22px; height: 22px;
+  }
+  .grid-btn .mini-grid span {
+    background: currentColor;
+    border-radius: 1px;
+    opacity: .7;
+  }
+  .grid-btn .label { font-size: 10px; opacity: .8; }
+
+  /* ── SLIDER ── */
+  .slider-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .slider-row label { font-size: 12px; color: var(--text-dim); width: 90px; flex-shrink: 0; }
+  .slider-row input[type=range] {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+  .slider-row .val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    width: 32px;
+    text-align: right;
+  }
+
+  /* ── STATUS BADGE ── */
+  .status-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-muted);
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-idle { background: var(--text-muted); }
+  .dot-active { background: var(--accent); animation: pulse .9s infinite alternate; }
+  .dot-success { background: var(--success); }
+  .dot-error { background: var(--danger); }
+  @keyframes pulse { to { opacity: .3; } }
+
+  /* ── CANVAS AREA ── */
+  #canvas-wrap {
+    position: relative;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #111;
+    max-width: 100%;
+    box-shadow: 0 0 40px rgba(0,0,0,.5);
+  }
+  #canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    cursor: crosshair;
+    user-select: none;
+  }
+  .canvas-hint {
+    position: absolute;
+    bottom: 10px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.75);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 5px 12px;
+    border-radius: 20px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .empty-state .big-icon { font-size: 56px; margin-bottom: 16px; opacity: .4; }
+  .empty-state h2 { font-size: 18px; font-weight: 500; color: var(--text-dim); margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; line-height: 1.7; max-width: 320px; }
+
+  /* ── RESULT PANEL ── */
+  .result-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    width: 100%;
+    max-width: 560px;
+  }
+  .result-panel h3 {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: .06em;
+  }
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    background: var(--surface);
+    border-radius: 4px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .stat-box .num {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .stat-box .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width .3s;
+    width: 0%;
+  }
+  .progress-fill.indeterminate {
+    width: 40% !important;
+    animation: slide 1s infinite;
+  }
+  @keyframes slide {
+    0% { margin-left: -40%; }
+    100% { margin-left: 110%; }
+  }
+
+  /* ── CUSTOM INPUT ── */
+  .custom-input-row {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .custom-input {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .custom-input:focus { border-color: var(--accent); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 10px 20px;
+    border-radius: 24px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all .25s;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+  #toast.success { border-color: var(--success); color: var(--success); }
+
+  /* step indicators */
+  .steps {
+    display: flex; gap: 6px; align-items: center;
+    margin-bottom: 4px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+  .step .num {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    display: grid; place-items: center;
+    font-size: 9px;
+  }
+  .step.done .num { border-color: var(--success); color: var(--success); }
+  .step.active .num { border-color: var(--accent); color: var(--accent); background: rgba(200,240,61,.1); }
+  .step-sep { color: var(--text-muted); font-size: 12px; }
+
+  .scroll-hint { color: var(--text-muted); font-size: 11px; font-family: var(--mono); }
+
+  /* ── ZOOM BAR ── */
+  .zoom-bar {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 8px;
+    width: 100%;
+    max-width: 800px;
+  }
+  .zoom-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 9px;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .zoom-btn:hover { border-color: var(--border); color: var(--text); background: var(--surface); }
+  .zoom-btn.icon-btn { font-size: 16px; padding: 2px 10px; font-weight: 600; }
+  .zoom-pct {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    min-width: 42px; text-align: center;
+  }
+  .zoom-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+  .zoom-tip { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 11px 32px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  footer a:hover { color: #d9ff52; text-decoration: underline; }
+  #canvas-wrap { max-width: 800px; width: 100%; }
+  #canvas-wrap canvas { width: 100% !important; height: auto !important; cursor: crosshair; }
+
+  @media (max-width: 700px) {
+    .main { flex-direction: column; }
+    .sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+    header { padding: 14px 16px; }
+    .zoom-tip { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="7" height="7" rx="1" fill="#111"/>
+      <rect x="11" y="2" width="7" height="7" rx="1" fill="#111"/>
+      <rect x="2" y="11" width="7" height="7" rx="1" fill="#111"/>
+      <rect x="11" y="11" width="7" height="7" rx="1" fill="#111"/>
+    </svg>
+  </div>
+  <h1>SHIPSHEET</h1>
+  <span class="tag">PDF → A4</span>
+</header>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Step indicators -->
+    <div>
+      <div class="section-label">Progress</div>
+      <div class="steps">
+        <div class="step" id="step1"><span class="num">1</span>Upload</div>
+        <div class="step-sep">›</div>
+        <div class="step" id="step2"><span class="num">2</span>Crop</div>
+        <div class="step-sep">›</div>
+        <div class="step" id="step3"><span class="num">3</span>Export</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- UPLOAD -->
+    <div>
+      <div class="section-label">1 — PDF Source</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".pdf" />
+        <div class="icon">📄</div>
+        <p>Drop PDF here or click to browse</p>
+        <div class="file-name" id="file-name-display"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- LAYOUT -->
+    <div id="layout-section" style="opacity:.35;pointer-events:none;">
+      <div class="section-label">2 — Labels per Page</div>
+      <div class="grid-options" id="grid-options">
+        <!-- auto -->
+        <button class="grid-btn" data-val="auto" title="All on one page">
+          <div class="mini-grid" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span class="label">Auto</span>
+        </button>
+      </div>
+
+      <div style="margin-top:10px;" id="custom-input-wrap">
+        <div class="section-label" style="margin-bottom:6px;">Custom count</div>
+        <div class="custom-input-row">
+          <button class="btn btn-ghost" style="width:36px;padding:8px;" id="dec-btn">−</button>
+          <input class="custom-input" type="number" id="custom-count" min="1" max="100" value="4" placeholder="e.g. 9" />
+          <button class="btn btn-ghost" style="width:36px;padding:8px;" id="inc-btn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- MARGINS -->
+    <div id="margin-section" style="opacity:.35;pointer-events:none;">
+      <div class="section-label">3 — Spacing</div>
+      <div class="slider-row">
+        <label>Margin</label>
+        <input type="range" id="margin-slider" min="0" max="20" step="0.5" value="3" />
+        <span class="val" id="margin-val">3 mm</span>
+      </div>
+      <div class="slider-row" style="margin-top:10px;">
+        <label>Gap</label>
+        <input type="range" id="gap-slider" min="0" max="10" step="0.5" value="1" />
+        <span class="val" id="gap-val">1 mm</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GENERATE -->
+    <div id="generate-section" style="opacity:.35;pointer-events:none;">
+      <div class="section-label" style="margin-bottom:8px;">4 — Generate</div>
+      <button class="btn btn-primary" id="generate-btn" disabled>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7L6 11L12 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Generate PDF
+      </button>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <div id="download-section" style="display:none;margin-top:4px;">
+      <button class="btn btn-success" id="download-btn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download PDF
+      </button>
+      <div style="margin-top:8px;">
+        <button class="btn btn-ghost" id="reset-btn" style="font-size:12px;padding:8px;">↺ Start Over</button>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div>
+      <div class="status-badge">
+        <div class="status-dot dot-idle" id="status-dot"></div>
+        <span id="status-text">Waiting for PDF</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- WORKSPACE -->
+  <main class="workspace" id="workspace">
+    <div class="empty-state" id="empty-state">
+      <div class="big-icon">⬜</div>
+      <h2>No PDF loaded</h2>
+      <p>Upload a PDF to get started. You'll draw a crop region over the label area on the first page, and it will be applied to all pages.</p>
+    </div>
+
+    <div id="canvas-area" style="display:none; width:100%; display:none; flex-direction:column; align-items:center; gap:12px;">
+      <div class="section-label" style="color:var(--accent);" id="canvas-instruction">
+        Drag to select the label region on this page
+      </div>
+      <div class="zoom-bar">
+        <button class="zoom-btn" id="zoom-fit-btn" title="Fit to window">⊡ Fit</button>
+        <button class="zoom-btn" id="zoom-100-btn" title="100% actual size">1:1</button>
+        <div class="zoom-sep"></div>
+        <button class="zoom-btn icon-btn" id="zoom-out-btn" title="Zoom out">−</button>
+        <span id="zoom-pct" class="zoom-pct">100%</span>
+        <button class="zoom-btn icon-btn" id="zoom-in-btn" title="Zoom in">+</button>
+        <div class="zoom-sep"></div>
+        <span class="zoom-tip">scroll=zoom · mid-click=pan · space+drag=pan</span>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="preview-canvas"></canvas>
+        <div class="canvas-hint" id="canvas-hint">Click and drag to draw crop area</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+        <button class="btn btn-ghost" id="clear-crop-btn" style="width:auto;font-size:12px;">
+          ✕ Clear Selection
+        </button>
+        <button class="btn btn-primary" id="confirm-crop-btn" style="width:auto;font-size:12px;" disabled>
+          ✓ Confirm Crop Region
+        </button>
+      </div>
+    </div>
+
+    <div id="result-area" style="display:none; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:560px;">
+      <div class="result-panel">
+        <h3>// OUTPUT SUMMARY</h3>
+        <div class="result-stats">
+          <div class="stat-box"><div class="num" id="res-labels">—</div><div class="label">Labels</div></div>
+          <div class="stat-box"><div class="num" id="res-pages">—</div><div class="label">A4 Pages</div></div>
+          <div class="stat-box"><div class="num" id="res-layout">—</div><div class="label">Layout</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);" id="res-note"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── STATE ──
+let state = {
+  sessionId: null,
+  pageCount: 0,
+  previewW: 0, previewH: 0,
+  cropRect: null,      // {x1,y1,x2,y2} in canvas px
+  confirmed: false,
+  outputId: null,
+  itemsPerPage: 'auto',
+  customCount: 4,
+};
+
+// ── GRID BUTTONS DATA ──
+const GRID_OPTIONS = [
+  { val: 'auto', label: 'Auto', grid: [2,2] },
+  { val: 4,  label: '4',  grid: [2,2] },
+  { val: 6,  label: '6',  grid: [2,3] },
+  { val: 8,  label: '8',  grid: [2,4] },
+  { val: 10, label: '10', grid: [2,5] },
+  { val: 12, label: '12', grid: [3,4] },
+  { val: 16, label: '16', grid: [4,4] },
+  { val: 20, label: '20', grid: [4,5] },
+  { val: 'custom', label: 'Custom', grid: [2,2] },
+];
+
+function buildGridButtons() {
+  const container = document.getElementById('grid-options');
+  container.innerHTML = '';
+  GRID_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'grid-btn';
+    btn.dataset.val = opt.val;
+    btn.title = opt.val === 'auto' ? 'All labels on one page'
+              : opt.val === 'custom' ? 'Enter custom number below'
+              : `${opt.val} labels per page`;
+
+    // Mini grid visual
+    const [cols, rows] = opt.grid;
+    const g = document.createElement('div');
+    g.className = 'mini-grid';
+    g.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    g.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    const cells = Math.min(cols * rows, 9);
+    for (let i = 0; i < cells; i++) {
+      const s = document.createElement('span'); g.appendChild(s);
+    }
+    if (opt.val === 'custom') {
+      g.innerHTML = '<span style="font-size:14px;background:transparent;display:grid;place-items:center;grid-column:span 2;grid-row:span 2;">✎</span>';
+      g.style.gridTemplateColumns = '1fr';
+      g.style.gridTemplateRows = '1fr';
+    }
+
+    const lbl = document.createElement('span');
+    lbl.className = 'label';
+    lbl.textContent = opt.label;
+
+    btn.appendChild(g);
+    btn.appendChild(lbl);
+
+    btn.addEventListener('click', () => selectGridOption(opt.val, btn));
+    container.appendChild(btn);
+  });
+}
+
+function selectGridOption(val, btnEl) {
+  document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  state.itemsPerPage = val;
+
+  const customWrap = document.getElementById('custom-input-wrap');
+  customWrap.style.display = val === 'custom' ? 'block' : 'none';
+}
+
+// ── SLIDERS ──
+document.getElementById('margin-slider').addEventListener('input', e => {
+  document.getElementById('margin-val').textContent = e.target.value + ' mm';
+});
+document.getElementById('gap-slider').addEventListener('input', e => {
+  document.getElementById('gap-val').textContent = e.target.value + ' mm';
+});
+
+// ── COUNTER ──
+document.getElementById('dec-btn').addEventListener('click', () => {
+  const inp = document.getElementById('custom-count');
+  inp.value = Math.max(1, parseInt(inp.value || 1) - 1);
+});
+document.getElementById('inc-btn').addEventListener('click', () => {
+  const inp = document.getElementById('custom-count');
+  inp.value = Math.min(100, parseInt(inp.value || 1) + 1);
+});
+
+// ── UPLOAD ──
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    toast('Only PDF files are supported', 'error'); return;
+  }
+  document.getElementById('file-name-display').textContent = file.name;
+  setStatus('active', 'Uploading…');
+  setStep(1, 'active');
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+    state.sessionId = data.session_id;
+    state.pageCount = data.page_count;
+    state.previewW = data.preview_w;
+    state.previewH = data.preview_h;
+
+    setStatus('active', `Loaded — ${data.page_count} page${data.page_count > 1 ? 's' : ''}`);
+    setStep(1, 'done'); setStep(2, 'active');
+
+    // Enable layout/margin sections
+    document.getElementById('layout-section').style.opacity = '1';
+    document.getElementById('layout-section').style.pointerEvents = 'auto';
+    document.getElementById('margin-section').style.opacity = '1';
+    document.getElementById('margin-section').style.pointerEvents = 'auto';
+
+    showCanvas(data.preview);
+    buildGridButtons();
+    selectGridOption('auto', document.querySelector('.grid-btn[data-val="auto"]'));
+    document.getElementById('custom-input-wrap').style.display = 'none';
+
+    toast(`Loaded ${data.page_count} pages`, 'success');
+  } catch(err) {
+    setStatus('error', 'Upload failed');
+    toast(err.message, 'error');
+  }
+}
+
+// ── CANVAS CROP + ZOOM/PAN ──
+const canvas = document.getElementById('preview-canvas');
+const ctx = canvas.getContext('2d');
+let img = null;
+let cropPixels = null; // crop rect in IMAGE pixel space (what we send to backend)
+
+// ── View transform state ──
+let vZoom = 1;       // current zoom level
+let vPanX = 0;       // pan offset in canvas px
+let vPanY = 0;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 12;
+
+// ── Interaction state ──
+let drawing = false;
+let panning = false;
+let spaceDown = false;
+let startImgX = 0, startImgY = 0;  // drag start in IMAGE space
+let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
+
+// ── Convert canvas CSS-pixel mouse pos → image pixel pos ──
+// Step 1: CSS px → canvas internal px (account for CSS scaling)
+// Step 2: canvas internal px → image px (undo view transform)
+function cssToCanvas(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (canvas.width  / r.width),
+    y: (e.clientY - r.top)  * (canvas.height / r.height),
+  };
+}
+function canvasToImg(cx, cy) {
+  return {
+    x: (cx - vPanX) / vZoom,
+    y: (cy - vPanY) / vZoom,
+  };
+}
+function imgToCanvas(ix, iy) {
+  return { x: ix * vZoom + vPanX, y: iy * vZoom + vPanY };
+}
+function cssToImg(e) {
+  const c = cssToCanvas(e);
+  return canvasToImg(c.x, c.y);
+}
+
+function clampPan() {
+  if (!img) return;
+  // Don't let the image go entirely off-screen (keep at least 60px visible)
+  const margin = 60;
+  const iw = img.width * vZoom, ih = img.height * vZoom;
+  vPanX = Math.min(canvas.width  - margin, Math.max(margin - iw, vPanX));
+  vPanY = Math.min(canvas.height - margin, Math.max(margin - ih, vPanY));
+}
+
+function fitView() {
+  if (!img) return;
+  const fitScale = Math.min(canvas.width / img.width, canvas.height / img.height);
+  vZoom = fitScale;
+  vPanX = (canvas.width  - img.width  * vZoom) / 2;
+  vPanY = (canvas.height - img.height * vZoom) / 2;
+}
+
+function showCanvas(previewDataUrl) {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('result-area').style.display = 'none';
+  const area = document.getElementById('canvas-area');
+  area.style.display = 'flex';
+
+  img = new Image();
+  img.onload = () => {
+    // Canvas internal resolution: fixed large size so we have room to pan/zoom
+    const maxW = Math.min(800, window.innerWidth - 320);
+    const maxH = Math.round(window.innerHeight * 0.68);
+    canvas.width  = maxW;
+    canvas.height = maxH;
+    canvas.style.width  = maxW + 'px';
+    canvas.style.height = maxH + 'px';
+    fitView();
+    drawCanvas();
+    updateZoomBadge();
+  };
+  img.src = previewDataUrl;
+}
+
+function drawCanvas(liveRect) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Checkerboard background (shows canvas extent)
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Apply view transform
+  ctx.save();
+  ctx.translate(vPanX, vPanY);
+  ctx.scale(vZoom, vZoom);
+
+  // Draw image
+  ctx.drawImage(img, 0, 0);
+
+  // Draw overlay + crop rect in IMAGE space
+  const active = liveRect || cropPixels;
+  if (active) {
+    const { x1, y1, x2, y2 } = active;
+    const w = x2 - x1, h = y2 - y1;
+
+    // Semi-transparent dark overlay over whole image
+    ctx.fillStyle = 'rgba(0,0,0,0.50)';
+    ctx.fillRect(0, 0, img.width, img.height);
+
+    // Punch out selected area (show original image through)
+    ctx.clearRect(x1, y1, w, h);
+    ctx.drawImage(img, x1, y1, w, h, x1, y1, w, h);
+
+    // Selection border — keep it visually 2px regardless of zoom
+    ctx.strokeStyle = '#c8f03d';
+    ctx.lineWidth = 2 / vZoom;
+    ctx.strokeRect(x1, y1, w, h);
+
+    // Corner handles — fixed visual size
+    const hs = 8 / vZoom;
+    ctx.fillStyle = '#c8f03d';
+    [[x1,y1],[x2,y1],[x1,y2],[x2,y2]].forEach(([hx,hy]) => {
+      ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs);
+    });
+
+    // Dimension label in image space
+    ctx.fillStyle = '#c8f03d';
+    ctx.font = `${12 / vZoom}px 'IBM Plex Mono', monospace`;
+    ctx.fillText(`${Math.round(w)} × ${Math.round(h)}`, x1 + 4/vZoom, y1 - 4/vZoom);
+  }
+
+  ctx.restore();
+
+  // Zoom-fit border glow when at fit level
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+}
+
+function updateZoomBadge() {
+  document.getElementById('zoom-pct').textContent = Math.round(vZoom * 100) + '%';
+}
+
+// ── Zoom controls ──
+function zoomAt(cx, cy, factor) {
+  // cx/cy in canvas internal pixels — zoom toward that point
+  const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, vZoom * factor));
+  const ratio = newZoom / vZoom;
+  vPanX = cx - ratio * (cx - vPanX);
+  vPanY = cy - ratio * (cy - vPanY);
+  vZoom = newZoom;
+  clampPan();
+  drawCanvas();
+  updateZoomBadge();
+}
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const c = cssToCanvas(e);
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  zoomAt(c.x, c.y, factor);
+}, { passive: false });
+
+document.getElementById('zoom-in-btn').addEventListener('click', () => {
+  zoomAt(canvas.width/2, canvas.height/2, 1.4);
+});
+document.getElementById('zoom-out-btn').addEventListener('click', () => {
+  zoomAt(canvas.width/2, canvas.height/2, 1/1.4);
+});
+document.getElementById('zoom-fit-btn').addEventListener('click', () => {
+  fitView(); drawCanvas(); updateZoomBadge();
+});
+document.getElementById('zoom-100-btn').addEventListener('click', () => {
+  vZoom = 1;
+  vPanX = (canvas.width  - img.width)  / 2;
+  vPanY = (canvas.height - img.height) / 2;
+  clampPan(); drawCanvas(); updateZoomBadge();
+});
+
+// Space key = pan mode cursor hint
+window.addEventListener('keydown', e => { if (e.code === 'Space') { spaceDown = true; canvas.style.cursor = 'grab'; } });
+window.addEventListener('keyup',   e => { if (e.code === 'Space') { spaceDown = false; if (!panning) canvas.style.cursor = drawing ? 'crosshair' : 'crosshair'; } });
+
+// ── Mouse interactions ──
+canvas.addEventListener('mousedown', e => {
+  if (!img) return;
+  e.preventDefault();
+
+  const isPanTrigger = e.button === 1 || e.button === 2 || spaceDown || e.altKey;
+
+  if (isPanTrigger) {
+    panning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panStartPanX = vPanX;  panStartPanY = vPanY;
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
+
+  // Draw crop
+  drawing = true;
+  const ip = cssToImg(e);
+  // Clamp to image bounds
+  startImgX = Math.max(0, Math.min(img.width,  ip.x));
+  startImgY = Math.max(0, Math.min(img.height, ip.y));
+  cropPixels = null;
+  document.getElementById('confirm-crop-btn').disabled = true;
+  document.getElementById('canvas-hint').textContent = 'Drag to select • scroll to zoom • middle-click to pan';
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!img) return;
+
+  if (panning) {
+    vPanX = panStartPanX + (e.clientX - panStartX);
+    vPanY = panStartPanY + (e.clientY - panStartY);
+    clampPan();
+    drawCanvas();
+    return;
+  }
+
+  if (drawing) {
+    const ip = cssToImg(e);
+    const ix = Math.max(0, Math.min(img.width,  ip.x));
+    const iy = Math.max(0, Math.min(img.height, ip.y));
+    drawCanvas({
+      x1: Math.min(startImgX, ix), y1: Math.min(startImgY, iy),
+      x2: Math.max(startImgX, ix), y2: Math.max(startImgY, iy),
+    });
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (!img) return;
+
+  if (panning) {
+    panning = false;
+    canvas.style.cursor = spaceDown ? 'grab' : 'crosshair';
+    return;
+  }
+
+  if (!drawing) return;
+  drawing = false;
+
+  const ip = cssToImg(e);
+  const ix = Math.max(0, Math.min(img.width,  ip.x));
+  const iy = Math.max(0, Math.min(img.height, ip.y));
+  const x1 = Math.min(startImgX, ix), y1 = Math.min(startImgY, iy);
+  const x2 = Math.max(startImgX, ix), y2 = Math.max(startImgY, iy);
+
+  if ((x2 - x1) < 4 || (y2 - y1) < 4) {
+    drawCanvas();
+    cropPixels = null;
+    document.getElementById('canvas-hint').textContent = 'Click and drag to draw crop area';
+    return;
+  }
+
+  cropPixels = { x1, y1, x2, y2 };
+  drawCanvas();
+  document.getElementById('confirm-crop-btn').disabled = false;
+  document.getElementById('canvas-hint').textContent =
+    `Selected ${Math.round(x2-x1)} × ${Math.round(y2-y1)} px — confirm when ready`;
+});
+
+canvas.addEventListener('mouseleave', e => {
+  if (drawing) {
+    // Finalise at last known position
+    canvas.dispatchEvent(new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY }));
+  }
+});
+
+// Right-click = pan (prevent context menu)
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch: single finger = draw, two fingers = pinch-zoom + pan
+let lastTouches = [];
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  lastTouches = Array.from(e.touches);
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY }));
+  } else {
+    // Stop drawing if second finger arrives
+    if (drawing) { drawing = false; drawCanvas(); }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && drawing) {
+    const t = e.touches[0];
+    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY }));
+  } else if (e.touches.length === 2) {
+    // Pinch-zoom + pan
+    const [a, b] = Array.from(e.touches);
+    const [la, lb] = lastTouches.length >= 2 ? lastTouches : [a, b];
+    const prevDist = Math.hypot(la.clientX - lb.clientX, la.clientY - lb.clientY);
+    const currDist = Math.hypot( a.clientX -  b.clientX,  a.clientY -  b.clientY);
+    const midX = (a.clientX + b.clientX) / 2;
+    const midY = (a.clientY + b.clientY) / 2;
+    const r = canvas.getBoundingClientRect();
+    const cx = (midX - r.left) * (canvas.width / r.width);
+    const cy = (midY - r.top)  * (canvas.height / r.height);
+    if (prevDist > 0) zoomAt(cx, cy, currDist / prevDist);
+    // Also pan with midpoint movement
+    const prevMidX = (la.clientX + lb.clientX) / 2;
+    const prevMidY = (la.clientY + lb.clientY) / 2;
+    vPanX += (midX - prevMidX); vPanY += (midY - prevMidY);
+    clampPan(); drawCanvas(); updateZoomBadge();
+  }
+  lastTouches = Array.from(e.touches);
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (e.touches.length === 0 && drawing) {
+    const t = e.changedTouches[0];
+    canvas.dispatchEvent(new MouseEvent('mouseup', { clientX: t.clientX, clientY: t.clientY }));
+  }
+  lastTouches = Array.from(e.touches);
+}, { passive: false });
+
+document.getElementById('clear-crop-btn').addEventListener('click', () => {
+  cropPixels = null;
+  document.getElementById('confirm-crop-btn').disabled = true;
+  document.getElementById('canvas-hint').textContent = 'Click and drag to draw crop area';
+  if (img) drawCanvas();
+});
+
+document.getElementById('confirm-crop-btn').addEventListener('click', () => {
+  if (!cropPixels) return;
+  state.cropRect = cropPixels;
+  state.confirmed = true;
+
+  // Enable generate
+  document.getElementById('generate-section').style.opacity = '1';
+  document.getElementById('generate-section').style.pointerEvents = 'auto';
+  document.getElementById('generate-btn').disabled = false;
+  setStep(2, 'done'); setStep(3, 'active');
+
+  document.getElementById('canvas-instruction').textContent = '✓ Crop region confirmed — click Generate PDF';
+  document.getElementById('canvas-instruction').style.color = 'var(--success)';
+  document.getElementById('confirm-crop-btn').textContent = '✓ Region Confirmed';
+  document.getElementById('confirm-crop-btn').disabled = true;
+
+  toast('Crop region confirmed', 'success');
+});
+
+// ── GENERATE ──
+document.getElementById('generate-btn').addEventListener('click', async () => {
+  if (!state.sessionId || !state.confirmed) return;
+
+  let ipp;
+  if (state.itemsPerPage === 'auto') {
+    ipp = 0; // backend = all
+  } else if (state.itemsPerPage === 'custom') {
+    ipp = parseInt(document.getElementById('custom-count').value) || 4;
+  } else {
+    ipp = state.itemsPerPage;
+  }
+
+  // cropRect is in canvas-internal px = preview image px (PREVIEW_SCALE=1.0)
+  // Backend multiplies by EXPORT_SCALE/PREVIEW_SCALE=4 to get high-res coords
+  const crop = {
+    x1: Math.round(state.cropRect.x1),
+    y1: Math.round(state.cropRect.y1),
+    x2: Math.round(state.cropRect.x2),
+    y2: Math.round(state.cropRect.y2),
+  };
+
+  const marginMm = parseFloat(document.getElementById('margin-slider').value);
+  const gapMm = parseFloat(document.getElementById('gap-slider').value);
+
+  setStatus('active', 'Processing…');
+  document.getElementById('generate-btn').disabled = true;
+  const fill = document.getElementById('progress-fill');
+  fill.classList.add('indeterminate');
+
+  try {
+    const res = await fetch('/api/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: state.sessionId,
+        crop, items_per_page: ipp,
+        margin_mm: marginMm, gap_mm: gapMm
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Processing failed');
+
+    fill.classList.remove('indeterminate');
+    fill.style.width = '100%';
+
+    state.outputId = data.output_id;
+    setStatus('success', 'Done!');
+    setStep(3, 'done');
+
+    // Show results
+    document.getElementById('canvas-area').style.display = 'none';
+    const ra = document.getElementById('result-area');
+    ra.style.display = 'flex';
+    document.getElementById('res-labels').textContent = data.total_labels;
+    document.getElementById('res-pages').textContent = data.output_pages;
+    document.getElementById('res-layout').textContent = `${data.cols}×${data.rows}`;
+    document.getElementById('res-note').textContent =
+      `${data.items_per_page} labels/page · ${data.cols} col${data.cols>1?'s':''} · ${data.rows} row${data.rows>1?'s':''}`;
+
+    document.getElementById('download-section').style.display = 'block';
+    document.getElementById('generate-section').style.display = 'none';
+
+    toast('PDF ready for download', 'success');
+  } catch(err) {
+    fill.classList.remove('indeterminate');
+    fill.style.width = '0%';
+    document.getElementById('generate-btn').disabled = false;
+    setStatus('error', 'Error');
+    toast(err.message, 'error');
+  }
+});
+
+document.getElementById('download-btn').addEventListener('click', () => {
+  if (!state.outputId) return;
+  window.location.href = `/api/download/${state.outputId}`;
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  location.reload();
+});
+
+// ── HELPERS ──
+function setStatus(type, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + {
+    idle: 'dot-idle', active: 'dot-active',
+    success: 'dot-success', error: 'dot-error'
+  }[type];
+  document.getElementById('status-text').textContent = text;
+}
+
+function setStep(n, state) {
+  const el = document.getElementById(`step${n}`);
+  el.className = 'step ' + state;
+}
+
+let toastTimer;
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// INIT
+buildGridButtons();
+document.getElementById('custom-input-wrap').style.display = 'none';
+setStatus('idle', 'Waiting for PDF');
+setStep(1, 'active');
+</script>
+<footer>
+  Made with ❤️ by <a href="https://github.com/supersanglap" target="_blank" rel="noopener">Sanglap</a>
+</footer>
+
+</body>
+</html>
