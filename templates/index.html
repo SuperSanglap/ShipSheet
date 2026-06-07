@@ -425,7 +425,7 @@
   .slider-row { display: flex; align-items: center; gap: 8px; }
   .slider-row label { font-size: 11px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
   .slider-row input[type=range] {
-    flex: 1;
+    flex: 1; -webkit-appearance: none;
     height: 3px; background: var(--border2); border-radius: 2px; outline: none;
   }
   .slider-row input[type=range]::-webkit-slider-thumb {
@@ -1215,44 +1215,40 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   fill.classList.add('indeterminate');
 
   try {
+    // Single request — server returns stats + PDF as base64 in one JSON response.
+    // No second fetch, no custom headers, works through any proxy.
     const res = await fetch('/api/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Processing failed' }));
-      throw new Error(err.error || 'Processing failed');
-    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Processing failed');
 
-    const totalLabels  = res.headers.get('X-Total-Labels')   || '—';
-    const outputPages  = res.headers.get('X-Output-Pages')   || '—';
-    const cols         = res.headers.get('X-Cols')           || '—';
-    const rows         = res.headers.get('X-Rows')           || '—';
-    const ippActual    = res.headers.get('X-Items-Per-Page') || '—';
-    const pageSizeUsed = res.headers.get('X-Page-Size')      || state.pageSize;
-
-    state.pdfBlob  = await res.blob();
-    state.sessionId = null;
+    // Decode base64 PDF → Blob entirely in the browser
+    const binary = atob(data.pdf_b64);
+    const bytes  = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    state.pdfBlob    = new Blob([bytes], { type: 'application/pdf' });
+    state.downloadAs = data.filename || `shipsheet_${state.pageSize.toLowerCase()}.pdf`;
+    state.sessionId  = null;
 
     fill.classList.remove('indeterminate');
     fill.style.width = '100%';
     setStatus('success', 'Ready to download');
     setStep(3, 'done');
 
-    // Update result panel (workspace)
-    document.getElementById('res-labels').textContent = totalLabels;
-    document.getElementById('res-pages').textContent  = outputPages;
-    document.getElementById('res-layout').textContent = `${cols}×${rows}`;
+    // Update result panel
+    document.getElementById('res-labels').textContent = data.total_labels;
+    document.getElementById('res-pages').textContent  = data.output_pages;
+    document.getElementById('res-layout').textContent = `${data.cols}×${data.rows}`;
     document.getElementById('res-note').textContent   =
-      `${ippActual} labels/page · ${pageSizeUsed} · ${cols}col × ${rows}row`;
+      `${data.items_per_page} labels/page · ${data.page_size} · ${data.cols}col × ${data.rows}row`;
 
-    // Switch workspace to result view
+    // Switch workspace view
     document.getElementById('canvas-area').style.display = 'none';
     document.getElementById('result-area').style.display = 'flex';
-
-    // Show download in panel too
     document.getElementById('panel-download').style.display = 'block';
 
     toast('✓ PDF ready', 'success');
@@ -1270,7 +1266,7 @@ function triggerDownload() {
   const url = URL.createObjectURL(state.pdfBlob);
   const a   = document.createElement('a');
   a.href    = url;
-  a.download = `shipsheet_${state.pageSize.toLowerCase()}.pdf`;
+  a.download = state.downloadAs || 'shipsheet.pdf';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
