@@ -14,7 +14,7 @@
     --border: #2a2a2a;
     --border2: #363636;
     --accent: #c8f03d;
-    --accent-glow: rgba(200,240,61,.12);
+    --accent-glow: rgba(200,240,61,.1);
     --text: #e8e8e8;
     --text-dim: #888;
     --text-muted: #4a4a4a;
@@ -22,438 +22,142 @@
     --success: #4cffb0;
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'DM Sans', sans-serif;
-    --r: 8px;
+    --r: 7px;
     --r-sm: 5px;
-    --panel: 296px;
+    --panel: 300px;
     --header: 52px;
     --footer: 36px;
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); }
 
-  html, body {
-    height: 100%; width: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-  }
+  /* ── SHELL ── */
+  .shell { display: grid; grid-template-rows: var(--header) 1fr var(--footer); grid-template-columns: 1fr var(--panel); width: 100vw; height: 100vh; overflow: hidden; }
 
-  /* ─── LAYOUT SHELL ─── */
-  .shell {
-    display: grid;
-    grid-template-rows: var(--header) 1fr var(--footer);
-    grid-template-columns: 1fr var(--panel);
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  /* ─── HEADER ─── */
-  header {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    z-index: 10;
-  }
-  .logo {
-    width: 28px; height: 28px;
-    background: var(--accent);
-    border-radius: 5px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-  }
+  /* ── HEADER ── */
+  header { grid-column: 1/-1; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 10; }
+  .logo { width: 28px; height: 28px; background: var(--accent); border-radius: 5px; display: grid; place-items: center; flex-shrink: 0; }
   .logo svg { width: 16px; height: 16px; }
-  header h1 {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: .08em;
-    color: var(--text);
-  }
-  .header-tag {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    border: 1px solid var(--border2);
-    padding: 2px 7px;
-    border-radius: 20px;
-  }
-  .step-track {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-left: auto;
-  }
-  .step-item {
-    display: flex; align-items: center; gap: 6px;
-    font-family: var(--mono); font-size: 10px;
-    color: var(--text-muted);
-    padding: 4px 10px;
-    transition: color .2s;
-  }
-  .step-item .s-num {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    border: 1.5px solid currentColor;
-    display: grid; place-items: center;
-    font-size: 8px; font-weight: 600;
-  }
+  header h1 { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .08em; }
+  .header-tag { font-family: var(--mono); font-size: 10px; color: var(--text-muted); border: 1px solid var(--border2); padding: 2px 7px; border-radius: 20px; }
+  .step-track { display: flex; align-items: center; gap: 0; margin-left: auto; }
+  .step-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding: 4px 10px; transition: color .2s; }
+  .step-item .s-num { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; font-size: 8px; font-weight: 600; }
   .step-item.active { color: var(--accent); }
   .step-item.done { color: var(--success); }
-  .step-item.done .s-num::after { content: '✓'; font-size: 9px; }
   .step-item.done .s-num { font-size: 0; }
+  .step-item.done .s-num::after { content: '✓'; font-size: 9px; }
   .step-arrow { color: var(--text-muted); font-size: 10px; opacity: .4; }
 
-  /* ─── WORKSPACE ─── */
-  .workspace {
-    grid-column: 1;
-    grid-row: 2;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-  }
+  /* ── WORKSPACE ── */
+  .workspace { grid-column: 1; grid-row: 2; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .ws-drop-overlay { display: none; position: absolute; inset: 0; background: rgba(200,240,61,.05); border: 2px dashed var(--accent); border-radius: var(--r); z-index: 50; align-items: center; justify-content: center; flex-direction: column; gap: 10px; pointer-events: none; }
+  .ws-drop-overlay.active { display: flex; }
+  .ws-drop-overlay .drop-icon { font-size: 40px; opacity: .7; }
+  .ws-drop-overlay p { font-family: var(--mono); font-size: 13px; color: var(--accent); }
 
-  /* Full-workspace drag overlay */
-  .workspace-drop-overlay {
-    display: none;
-    position: absolute; inset: 0;
-    background: rgba(200,240,61,.06);
-    border: 2px dashed var(--accent);
-    border-radius: var(--r);
-    z-index: 50;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 12px;
-    pointer-events: none;
-  }
-  .workspace-drop-overlay.active { display: flex; }
-  .workspace-drop-overlay .drop-icon { font-size: 48px; opacity: .6; }
-  .workspace-drop-overlay p { font-family: var(--mono); font-size: 13px; color: var(--accent); }
-
-  /* ─── EMPTY STATE ─── */
-  .empty-state {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px;
-    text-align: center;
-    padding: 40px;
-    cursor: pointer;
-    width: 100%; height: 100%;
-    transition: background .2s;
-    position: relative;
-  }
+  /* ── EMPTY STATE ── */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 40px; cursor: pointer; width: 100%; height: 100%; transition: background .2s; position: relative; }
   .empty-state:hover { background: rgba(200,240,61,.02); }
-  .empty-state input[type=file] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .empty-icon {
-    width: 80px; height: 80px;
-    border-radius: 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    display: grid; place-items: center;
-    font-size: 32px;
-    transition: border-color .2s, transform .2s;
-  }
-  .empty-state:hover .empty-icon { border-color: var(--accent); transform: scale(1.04); }
-  .empty-state h2 { font-size: 17px; font-weight: 500; color: var(--text-dim); }
-  .empty-state p { font-size: 13px; line-height: 1.7; color: var(--text-muted); max-width: 300px; }
-  .empty-browse {
-    font-family: var(--mono); font-size: 11px;
-    color: var(--accent); border: 1px solid rgba(200,240,61,.3);
-    padding: 5px 14px; border-radius: 20px;
-    pointer-events: none;
-    margin-top: 4px;
-  }
+  .empty-state input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .empty-icon { width: 76px; height: 76px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--border2); display: grid; place-items: center; font-size: 30px; transition: border-color .2s, transform .2s; }
+  .empty-state:hover .empty-icon { border-color: var(--accent); transform: scale(1.05); }
+  .empty-state h2 { font-size: 16px; font-weight: 500; color: var(--text-dim); }
+  .empty-state p { font-size: 12px; line-height: 1.7; color: var(--text-muted); max-width: 280px; }
+  .empty-browse { font-family: var(--mono); font-size: 11px; color: var(--accent); border: 1px solid rgba(200,240,61,.3); padding: 4px 14px; border-radius: 20px; pointer-events: none; }
 
-  /* ─── CANVAS AREA ─── */
-  #canvas-area {
-    display: none;
-    flex-direction: column;
-    width: 100%; height: 100%;
-    position: relative;
-  }
-  .zoom-bar {
-    display: flex; align-items: center; gap: 2px;
-    padding: 5px 10px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    z-index: 5;
-  }
-  .zoom-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--r-sm);
-    color: var(--text-dim);
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 3px 8px;
-    cursor: pointer;
-    transition: all .12s;
-    white-space: nowrap;
-    line-height: 1.6;
-  }
+  /* ── CANVAS AREA ── */
+  #canvas-area { display: none; flex-direction: column; width: 100%; height: 100%; }
+  .zoom-bar { display: flex; align-items: center; gap: 2px; padding: 5px 10px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .zoom-btn { background: transparent; border: 1px solid transparent; border-radius: var(--r-sm); color: var(--text-dim); font-family: var(--mono); font-size: 11px; padding: 3px 8px; cursor: pointer; transition: all .12s; white-space: nowrap; line-height: 1.6; }
   .zoom-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
   .zoom-btn.icon-btn { font-size: 15px; padding: 1px 8px; font-weight: 700; }
   .zoom-pct { font-family: var(--mono); font-size: 11px; color: var(--accent); min-width: 38px; text-align: center; }
   .zoom-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
   .zoom-tip { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
+  #canvas-outer { flex: 1; overflow: hidden; position: relative; background: #0a0a0a; background-image: radial-gradient(circle, #1c1c1c 1px, transparent 1px); background-size: 24px 24px; }
+  #preview-canvas { display: block; cursor: crosshair; user-select: none; position: absolute; top: 0; left: 0; }
+  .canvas-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.82); backdrop-filter: blur(6px); color: var(--text-dim); font-size: 11px; font-family: var(--mono); padding: 5px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; border: 1px solid var(--border); transition: color .2s, border-color .2s; }
+  .crop-action-bar { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 16px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
 
-  #canvas-outer {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    background: #0a0a0a;
-    background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-  #preview-canvas {
-    display: block;
-    cursor: crosshair;
-    user-select: none;
-    position: absolute;
-    top: 0; left: 0;
-  }
-  .canvas-hint {
-    position: absolute;
-    bottom: 12px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,.8);
-    backdrop-filter: blur(6px);
-    color: var(--text-dim);
-    font-size: 11px;
-    font-family: var(--mono);
-    padding: 5px 14px;
-    border-radius: 20px;
-    pointer-events: none;
-    white-space: nowrap;
-    border: 1px solid var(--border);
-    transition: opacity .2s;
-  }
-
-  /* crop action bar pinned at bottom of canvas area */
-  .crop-action-bar {
-    display: flex; align-items: center; justify-content: center;
-    gap: 10px;
-    padding: 8px 16px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  /* ─── RESULT AREA ─── */
-  #result-area {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%; height: 100%;
-    gap: 20px;
-    padding: 32px;
-  }
-  .result-success-icon {
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    background: rgba(76,255,176,.1);
-    border: 2px solid var(--success);
-    display: grid; place-items: center;
-    font-size: 28px;
-  }
-  .result-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 20px;
-    width: 100%;
-    max-width: 480px;
-  }
-  .result-panel h3 {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    margin-bottom: 14px;
-    letter-spacing: .1em;
-    opacity: .7;
-  }
-  .result-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .stat-box {
-    background: var(--surface2);
-    border-radius: var(--r-sm);
-    padding: 10px;
-    text-align: center;
-    border: 1px solid var(--border);
-  }
-  .stat-box .num { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--accent); }
-  .stat-box .lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .08em; }
+  /* ── RESULT AREA ── */
+  #result-area { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; gap: 18px; padding: 32px; }
+  .result-success-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(76,255,176,.1); border: 2px solid var(--success); display: grid; place-items: center; font-size: 26px; }
+  .result-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; width: 100%; max-width: 460px; }
+  .result-panel h3 { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 12px; letter-spacing: .12em; opacity: .7; }
+  .result-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-box { background: var(--surface2); border-radius: var(--r-sm); padding: 10px; text-align: center; border: 1px solid var(--border); }
+  .stat-box .num { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--accent); }
+  .stat-box .lbl { font-size: 9px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .08em; }
   .res-note { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
-  .result-actions {
-    display: flex; flex-direction: column; gap: 8px;
-    width: 100%; max-width: 480px;
-  }
-  .result-actions-row { display: flex; gap: 8px; }
+  .result-actions { display: flex; flex-direction: column; gap: 7px; width: 100%; max-width: 460px; }
+  .result-actions-row { display: flex; gap: 7px; }
 
-  /* ─── SIDE PANEL ─── */
-  .panel {
-    grid-column: 2;
-    grid-row: 2;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
+  /* ── PANEL ── */
+  .panel { grid-column: 2; grid-row: 2; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
   .panel::-webkit-scrollbar { width: 4px; }
   .panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-  .panel-section {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    transition: opacity .2s;
-  }
+  .panel-section { padding: 13px 14px; border-bottom: 1px solid var(--border); transition: opacity .2s; }
   .panel-section.locked { opacity: .3; pointer-events: none; }
-
-  .sec-label {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .sec-label .sec-num {
-    width: 15px; height: 15px;
-    border-radius: 50%;
-    border: 1px solid var(--text-muted);
-    display: grid; place-items: center;
-    font-size: 8px;
-  }
+  .sec-label { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; display: flex; align-items: center; gap: 5px; }
+  .sec-label .sec-num { width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--text-muted); display: grid; place-items: center; font-size: 8px; flex-shrink: 0; }
   .sec-label.unlocked .sec-num { border-color: var(--accent); color: var(--accent); }
   .sec-label.done-lbl .sec-num { border-color: var(--success); color: var(--success); font-size: 0; }
   .sec-label.done-lbl .sec-num::after { content: '✓'; font-size: 9px; }
 
-  /* ─── UPLOAD MINI ─── */
-  .upload-mini {
-    border: 1.5px dashed var(--border2);
-    border-radius: var(--r-sm);
-    padding: 12px 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-    position: relative;
-  }
-  .upload-mini:hover, .upload-mini.drag-over {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-  }
-  .upload-mini input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .upload-mini p { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
-  .file-badge {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--r-sm);
-    padding: 7px 10px;
-    font-family: var(--mono); font-size: 11px;
-    color: var(--accent);
-    margin-top: 6px;
-    word-break: break-all;
-    display: none;
-  }
-  .file-badge.show { display: flex; }
+  /* ── FILE LIST ── */
+  .upload-drop { border: 1.5px dashed var(--border2); border-radius: var(--r-sm); padding: 11px 10px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+  .upload-drop:hover, .upload-drop.drag-over { border-color: var(--accent); background: var(--accent-glow); }
+  .upload-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-drop p { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  .upload-drop p span { color: var(--accent); font-family: var(--mono); }
 
-  /* ─── GRID SELECTOR ─── */
+  .file-list { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .file-item { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-sm); padding: 7px 9px; transition: border-color .15s; }
+  .file-item:hover { border-color: var(--border); }
+  .file-item .fi-icon { font-size: 14px; flex-shrink: 0; }
+  .file-item .fi-info { flex: 1; min-width: 0; }
+  .file-item .fi-name { font-family: var(--mono); font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-item .fi-pages { font-family: var(--mono); font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+  .file-item .fi-remove { flex-shrink: 0; background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; padding: 2px 4px; border-radius: 3px; line-height: 1; transition: color .15s, background .15s; }
+  .file-item .fi-remove:hover { color: var(--danger); background: rgba(255,82,82,.1); }
+  .file-item.uploading { opacity: .6; }
+  .file-item.uploading .fi-remove { pointer-events: none; }
+
+  .total-badge { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 10px; background: var(--surface2); border-radius: var(--r-sm); border: 1px solid var(--border); }
+  .total-badge span { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+  .total-badge strong { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+  /* ── GRID OPTIONS ── */
   .grid-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-  .grid-btn {
-    aspect-ratio: 1;
-    border: 1.5px solid var(--border);
-    border-radius: var(--r-sm);
-    background: var(--surface2);
-    color: var(--text-muted);
-    font-family: var(--mono);
-    font-size: 10px;
-    cursor: pointer;
-    transition: all .15s;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 2px;
-    padding: 2px;
-  }
-  .grid-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-  .grid-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .grid-btn { aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: var(--r-sm); background: var(--surface2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 2px; }
+  .grid-btn:hover, .grid-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
   .mini-grid { display: grid; gap: 1.5px; width: 20px; height: 20px; }
   .mini-grid span { background: currentColor; border-radius: 1px; opacity: .7; }
   .grid-btn .gl { font-size: 9px; opacity: .8; }
 
-  /* ─── PAGE SIZE ─── */
+  /* ── PAGE SIZE ── */
   .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-  .size-btn {
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: var(--r-sm);
-    color: var(--text-dim);
-    cursor: pointer;
-    padding: 7px 5px;
-    display: flex; flex-direction: column;
-    align-items: center; gap: 1px;
-    transition: all .15s;
-  }
-  .size-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-  .size-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .size-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--r-sm); color: var(--text-dim); cursor: pointer; padding: 7px 5px; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: all .15s; }
+  .size-btn:hover, .size-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
   .size-btn.wide { grid-column: span 2; flex-direction: row; justify-content: center; gap: 6px; }
   .size-name { font-family: var(--mono); font-size: 11px; font-weight: 600; }
-  .size-dim { font-family: var(--mono); font-size: 9px; opacity: .6; }
+  .size-dim  { font-family: var(--mono); font-size: 9px; opacity: .6; }
 
-  /* ─── SLIDERS ─── */
+  /* ── SLIDERS ── */
   .slider-row { display: flex; align-items: center; gap: 8px; }
   .slider-row label { font-size: 11px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
-  .slider-row input[type=range] {
-    flex: 1; -webkit-appearance: none;
-    height: 3px; background: var(--border2); border-radius: 2px; outline: none;
-  }
-  .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 13px; height: 13px;
-    border-radius: 50%; background: var(--accent); cursor: pointer;
-  }
+  .slider-row input[type=range] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--border2); border-radius: 2px; outline: none; }
+  .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); cursor: pointer; }
   .slider-row .val { font-family: var(--mono); font-size: 10px; color: var(--accent); width: 34px; text-align: right; }
 
-  /* ─── CUSTOM INPUT ─── */
+  /* ── CUSTOM INPUT ── */
   .custom-input-row { display: flex; gap: 5px; align-items: center; }
-  .custom-input {
-    background: var(--surface2); border: 1.5px solid var(--border2);
-    border-radius: var(--r-sm); color: var(--text);
-    font-family: var(--mono); font-size: 12px;
-    padding: 7px 8px; width: 100%; outline: none;
-    transition: border-color .15s;
-  }
+  .custom-input { background: var(--surface2); border: 1.5px solid var(--border2); border-radius: var(--r-sm); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 7px 8px; width: 100%; outline: none; transition: border-color .15s; }
   .custom-input:focus { border-color: var(--accent); }
 
-  /* ─── BUTTONS ─── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 6px; padding: 9px 14px;
-    border-radius: var(--r-sm); font-family: var(--sans);
-    font-size: 12px; font-weight: 500;
-    cursor: pointer; transition: all .15s;
-    border: none; user-select: none; white-space: nowrap;
-  }
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: var(--r-sm); font-family: var(--sans); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; border: none; user-select: none; white-space: nowrap; }
   .btn-primary { background: var(--accent); color: #111; width: 100%; }
   .btn-primary:hover { background: #d9ff52; }
   .btn-primary:disabled { background: #253100; color: #4a5e10; cursor: not-allowed; }
@@ -462,23 +166,16 @@
   .btn-ghost.full { width: 100%; }
   .btn-success { background: var(--success); color: #0a2a1e; flex: 1; }
   .btn-success:hover { background: #6effca; }
-  .btn-danger-ghost { background: transparent; color: var(--danger); border: 1px solid rgba(255,82,82,.25); width: 100%; }
-  .btn-danger-ghost:hover { background: rgba(255,82,82,.08); }
   .btn-sm { padding: 6px 10px; font-size: 11px; }
 
-  /* ─── GENERATE SECTION ─── */
+  /* ── PROGRESS ── */
   .progress-bar { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 8px; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; width: 0%; }
   .progress-fill.indeterminate { width: 40% !important; animation: slide 1s infinite; }
   @keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 110%; } }
 
-  /* ─── STATUS ─── */
-  .status-badge {
-    display: flex; align-items: center; gap: 8px;
-    font-family: var(--mono); font-size: 10px; color: var(--text-muted);
-    padding: 7px 10px;
-    background: var(--surface2); border-radius: var(--r-sm); border: 1px solid var(--border);
-  }
+  /* ── STATUS ── */
+  .status-badge { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding: 7px 10px; background: var(--surface2); border-radius: var(--r-sm); border: 1px solid var(--border); }
   .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .dot-idle { background: var(--text-muted); }
   .dot-active { background: var(--accent); animation: blink .9s infinite alternate; }
@@ -486,38 +183,23 @@
   .dot-error { background: var(--danger); }
   @keyframes blink { to { opacity: .2; } }
 
-  /* ─── FOOTER ─── */
-  footer {
-    grid-column: 1 / -1;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--surface); border-top: 1px solid var(--border);
-    font-family: var(--mono); font-size: 11px; color: var(--text-muted);
-  }
-  footer a { color: var(--accent); text-decoration: none; transition: color .15s; }
+  /* ── FOOTER ── */
+  footer { grid-column: 1/-1; display: flex; align-items: center; justify-content: center; background: var(--surface); border-top: 1px solid var(--border); font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+  footer a { color: var(--accent); text-decoration: none; }
   footer a:hover { color: #d9ff52; }
 
-  /* ─── TOAST ─── */
-  #toast {
-    position: fixed; bottom: 50px; left: 50%;
-    transform: translateX(-50%) translateY(12px);
-    background: var(--surface2); border: 1px solid var(--border2);
-    color: var(--text); font-size: 12px; font-family: var(--mono);
-    padding: 8px 18px; border-radius: 24px;
-    pointer-events: none; opacity: 0; transition: all .22s; z-index: 9999;
-  }
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-size: 12px; font-family: var(--mono); padding: 8px 18px; border-radius: 24px; pointer-events: none; opacity: 0; transition: all .22s; z-index: 9999; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.error { border-color: var(--danger); color: var(--danger); }
   #toast.success { border-color: var(--success); color: var(--success); }
 
-  /* ─── DIVIDER ─── */
   .mini-divider { height: 1px; background: var(--border); margin: 8px 0; }
 </style>
 </head>
 <body>
-
 <div class="shell">
 
-  <!-- HEADER -->
   <header>
     <div class="logo">
       <svg viewBox="0 0 20 20" fill="none">
@@ -529,7 +211,6 @@
     </div>
     <h1>SHIPSHEET</h1>
     <span class="header-tag">PDF → PRINT</span>
-
     <div class="step-track">
       <div class="step-item" id="step1"><span class="s-num">1</span>Upload</div>
       <div class="step-arrow">›</div>
@@ -539,25 +220,22 @@
     </div>
   </header>
 
-  <!-- WORKSPACE -->
   <main class="workspace" id="workspace">
-
-    <!-- Global drop overlay (shows on drag-over anywhere in workspace) -->
-    <div class="workspace-drop-overlay" id="ws-drop-overlay">
+    <div class="ws-drop-overlay" id="ws-drop-overlay">
       <div class="drop-icon">📄</div>
-      <p>Drop PDF to load</p>
+      <p>Drop PDF(s) to add</p>
     </div>
 
-    <!-- EMPTY STATE -->
+    <!-- EMPTY -->
     <div class="empty-state" id="empty-state">
-      <input type="file" id="file-input-ws" accept=".pdf" />
+      <input type="file" id="file-input-ws" accept=".pdf" multiple />
       <div class="empty-icon">📄</div>
-      <h2>Drop your label PDF here</h2>
-      <p>Each page should contain one shipping label. ShipSheet will crop and arrange them into a print-ready sheet.</p>
-      <div class="empty-browse">Click or drag a PDF to begin</div>
+      <h2>Drop your label PDFs here</h2>
+      <p>Upload one or more PDFs. Each page is one label. ShipSheet crops and arranges them all into a single print-ready sheet.</p>
+      <div class="empty-browse">Click or drag PDF(s) to begin</div>
     </div>
 
-    <!-- CANVAS AREA -->
+    <!-- CANVAS -->
     <div id="canvas-area">
       <div class="zoom-bar">
         <button class="zoom-btn" id="zoom-fit-btn">⊡ Fit</button>
@@ -569,21 +247,17 @@
         <div class="zoom-sep"></div>
         <span class="zoom-tip">scroll = zoom &nbsp;·&nbsp; mid-click / space+drag = pan</span>
       </div>
-
       <div id="canvas-outer">
         <canvas id="preview-canvas"></canvas>
         <div class="canvas-hint" id="canvas-hint">Click and drag to select the label area</div>
       </div>
-
       <div class="crop-action-bar">
         <button class="btn btn-ghost btn-sm" id="clear-crop-btn">✕ Clear</button>
-        <button class="btn btn-primary btn-sm" id="confirm-crop-btn" style="width:auto;" disabled>
-          ✓ Confirm Selection
-        </button>
+        <button class="btn btn-primary btn-sm" id="confirm-crop-btn" style="width:auto;" disabled>✓ Confirm Selection</button>
       </div>
     </div>
 
-    <!-- RESULT AREA -->
+    <!-- RESULT -->
     <div id="result-area">
       <div class="result-success-icon">✓</div>
       <div class="result-panel">
@@ -598,29 +272,30 @@
       <div class="result-actions">
         <div class="result-actions-row">
           <button class="btn btn-success" id="download-btn-result">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Save PDF
           </button>
           <button class="btn btn-ghost" id="reset-btn-result" style="flex:0 0 auto;">↺ Start Over</button>
         </div>
       </div>
     </div>
-
   </main>
 
   <!-- RIGHT PANEL -->
-  <aside class="panel" id="panel">
+  <aside class="panel">
 
-    <!-- 1. Upload -->
+    <!-- 1. Files -->
     <div class="panel-section">
-      <div class="sec-label unlocked" id="sec1-lbl"><span class="sec-num">1</span>PDF Source</div>
-      <div class="upload-mini" id="upload-zone">
-        <input type="file" id="file-input" accept=".pdf" />
-        <p>Click or drop a PDF here</p>
+      <div class="sec-label unlocked" id="sec1-lbl"><span class="sec-num">1</span>PDF Files</div>
+      <div class="upload-drop" id="upload-zone">
+        <input type="file" id="file-input" accept=".pdf" multiple />
+        <p>Drop PDFs here or <span>browse</span></p>
       </div>
-      <div class="file-badge" id="file-badge">📄 <span id="file-name-display"></span></div>
+      <div class="file-list" id="file-list"></div>
+      <div class="total-badge" id="total-badge" style="display:none;">
+        <span id="total-files-label">0 files</span>
+        <strong id="total-pages-label">0 labels</strong>
+      </div>
     </div>
 
     <!-- 2. Labels per page -->
@@ -679,20 +354,14 @@
     <div class="panel-section locked" id="generate-section">
       <div class="sec-label" id="sec5-lbl"><span class="sec-num">5</span>Generate</div>
       <button class="btn btn-primary" id="generate-btn" disabled>
-        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-          <path d="M2 7L6 11L12 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 7L6 11L12 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Generate PDF
       </button>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-      <!-- Download (shown after generation, inside panel too) -->
       <div id="panel-download" style="display:none;margin-top:10px;">
         <div class="mini-divider"></div>
         <button class="btn btn-success" id="download-btn" style="width:100%;margin-bottom:6px;">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-            <path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Save PDF
         </button>
         <button class="btn btn-ghost full" id="reset-btn">↺ Start Over</button>
@@ -706,34 +375,168 @@
         <span id="status-text">Waiting for PDF</span>
       </div>
     </div>
-
   </aside>
 
-  <!-- FOOTER -->
-  <footer>
-    Made with ❤️ by <a href="https://github.com/sanglap" target="_blank" rel="noopener">&nbsp;sanglap</a>
-  </footer>
-
+  <footer>Made with ❤️ by <a href="https://github.com/sanglap" target="_blank" rel="noopener">&nbsp;sanglap</a></footer>
 </div>
-
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 //  STATE
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 const state = {
-  sessionId: null,
-  cropRect:  null,   // in IMAGE px
-  confirmed: false,
-  pdfBlob:   null,
+  sessionId:    null,
+  files:        [],    // [{ file_id, name, page_count }]
+  totalPages:   0,
+  cropRect:     null,  // IMAGE-space px
+  confirmed:    false,
+  pdfBlob:      null,
+  downloadAs:   'shipsheet.pdf',
   itemsPerPage: 'auto',
-  pageSize: 'A4',
+  pageSize:     'A4',
 };
 
-// ══════════════════════════════════════════
-//  GRID BUTTONS
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  UPLOAD HANDLING
+// ═══════════════════════════════════════════════════════
+const uploadZone  = document.getElementById('upload-zone');
+const fileInputP  = document.getElementById('file-input');
+const fileInputWS = document.getElementById('file-input-ws');
+const workspace   = document.getElementById('workspace');
+const wsOverlay   = document.getElementById('ws-drop-overlay');
+
+// Panel drop zone
+uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInputP.addEventListener('change',  () => { handleFiles(Array.from(fileInputP.files));  fileInputP.value  = ''; });
+fileInputWS.addEventListener('change', () => { handleFiles(Array.from(fileInputWS.files)); fileInputWS.value = ''; });
+
+// Workspace-wide drop
+let dragCounter = 0;
+workspace.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; wsOverlay.classList.add('active'); });
+workspace.addEventListener('dragleave', ()  => { if (--dragCounter <= 0) { dragCounter = 0; wsOverlay.classList.remove('active'); } });
+workspace.addEventListener('dragover',  e => e.preventDefault());
+workspace.addEventListener('drop', e => {
+  e.preventDefault(); dragCounter = 0; wsOverlay.classList.remove('active');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+
+async function handleFiles(files) {
+  const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  if (!pdfs.length) { toast('Only PDF files are supported', 'error'); return; }
+  // Upload one at a time so each file picks up the session_id from the previous
+  for (const file of pdfs) {
+    await uploadOne(file);
+  }
+}
+
+async function uploadOne(file) {
+  // Optimistically add to file list as "uploading"
+  const tempId  = 'tmp-' + Math.random().toString(36).slice(2);
+  const tempItem = addFileItem(tempId, file.name, '…', true);
+
+  const fd = new FormData();
+  fd.append('file', file);
+  if (state.sessionId) fd.append('session_id', state.sessionId);
+
+  setStatus('active', 'Uploading…');
+
+  try {
+    const res  = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+    // Replace temp item with real one
+    tempItem.remove();
+    state.sessionId = data.session_id;
+    state.files.push({ file_id: data.file_id, name: data.name, page_count: data.page_count });
+    state.totalPages = data.total_pages;
+    addFileItem(data.file_id, data.name, data.page_count, false);
+    updateTotalBadge(data.file_count, data.total_pages);
+
+    // First file: show preview and unlock sections
+    if (data.preview) {
+      unlock('layout-section',   'sec2-lbl');
+      unlock('pagesize-section', 'sec3-lbl');
+      unlock('margin-section',   'sec4-lbl');
+      buildGridButtons();
+      document.querySelector('.grid-btn[data-val="auto"]')?.classList.add('active');
+      showCanvas(data.preview, data.preview_w, data.preview_h);
+      setStep(1, 'done'); setStep(2, 'active');
+    }
+
+    setStatus('active', `${data.file_count} file${data.file_count > 1 ? 's' : ''} · ${data.total_pages} labels`);
+    toast(`Added ${data.name}`, 'success');
+  } catch (err) {
+    tempItem.remove();
+    setStatus('error', err.message);
+    toast(err.message, 'error');
+  }
+}
+
+function addFileItem(fileId, name, pages, uploading) {
+  const list = document.getElementById('file-list');
+  const item = document.createElement('div');
+  item.className = 'file-item' + (uploading ? ' uploading' : '');
+  item.dataset.fileId = fileId;
+  item.innerHTML = `
+    <span class="fi-icon">📄</span>
+    <div class="fi-info">
+      <div class="fi-name" title="${name}">${name}</div>
+      <div class="fi-pages">${uploading ? 'Uploading…' : pages + ' page' + (pages !== 1 ? 's' : '')}</div>
+    </div>
+    <button class="fi-remove" title="Remove">✕</button>`;
+  item.querySelector('.fi-remove').addEventListener('click', () => removeFile(fileId, item));
+  list.appendChild(item);
+  return item;
+}
+
+async function removeFile(fileId, itemEl) {
+  if (!state.sessionId) return;
+  itemEl.style.opacity = '.4';
+  itemEl.style.pointerEvents = 'none';
+
+  try {
+    const res  = await fetch('/api/remove_file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: state.sessionId, file_id: fileId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    itemEl.remove();
+    state.files = state.files.filter(f => f.file_id !== fileId);
+    state.totalPages = data.total_pages;
+    updateTotalBadge(data.file_count, data.total_pages);
+    setStatus('active', `${data.file_count} file${data.file_count !== 1 ? 's' : ''} · ${data.total_pages} labels`);
+
+    if (data.file_count === 0) {
+      // Back to empty state
+      location.reload();
+    }
+  } catch (err) {
+    itemEl.style.opacity = '1';
+    itemEl.style.pointerEvents = 'auto';
+    toast(err.message, 'error');
+  }
+}
+
+function updateTotalBadge(fileCount, totalPages) {
+  const badge = document.getElementById('total-badge');
+  badge.style.display = 'flex';
+  document.getElementById('total-files-label').textContent  = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
+  document.getElementById('total-pages-label').textContent  = `${totalPages} labels`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  PANEL CONTROLS
+// ═══════════════════════════════════════════════════════
 const GRID_OPTIONS = [
   { val: 'auto', label: 'Auto', grid: [2,2] },
   { val: 4,  label: '4',  grid: [2,2] },
@@ -757,21 +560,18 @@ function buildGridButtons() {
     const [cols, rows] = opt.grid;
     const g = document.createElement('div');
     g.className = 'mini-grid';
-    g.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    g.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    g.style.gridTemplateRows    = `repeat(${rows},1fr)`;
     if (opt.val === 'custom') {
       g.style.placeItems = 'center';
       g.innerHTML = '<span style="font-size:13px;background:none;">✎</span>';
     } else {
-      for (let i = 0; i < Math.min(cols * rows, 9); i++) {
-        g.appendChild(document.createElement('span'));
-      }
+      for (let i = 0; i < Math.min(cols * rows, 9); i++) g.appendChild(document.createElement('span'));
     }
     const lbl = document.createElement('span');
     lbl.className = 'gl';
     lbl.textContent = opt.label === '✎' ? '' : opt.label;
-    btn.appendChild(g);
-    btn.appendChild(lbl);
+    btn.appendChild(g); btn.appendChild(lbl);
     btn.addEventListener('click', () => {
       document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -782,9 +582,6 @@ function buildGridButtons() {
   });
 }
 
-// ══════════════════════════════════════════
-//  PAGE SIZE BUTTONS
-// ══════════════════════════════════════════
 document.querySelectorAll('.size-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
@@ -794,17 +591,11 @@ document.querySelectorAll('.size-btn').forEach(btn => {
   });
 });
 
-// ══════════════════════════════════════════
-//  SLIDERS
-// ══════════════════════════════════════════
 document.getElementById('margin-slider').addEventListener('input', e =>
   document.getElementById('margin-val').textContent = e.target.value + ' mm');
 document.getElementById('gap-slider').addEventListener('input', e =>
   document.getElementById('gap-val').textContent = e.target.value + ' mm');
 
-// ══════════════════════════════════════════
-//  COUNTER
-// ══════════════════════════════════════════
 document.getElementById('dec-btn').addEventListener('click', () => {
   const i = document.getElementById('custom-count');
   i.value = Math.max(1, parseInt(i.value || 1) - 1);
@@ -814,120 +605,30 @@ document.getElementById('inc-btn').addEventListener('click', () => {
   i.value = Math.min(100, parseInt(i.value || 1) + 1);
 });
 
-// ══════════════════════════════════════════
-//  UPLOAD — panel zone + workspace drop + workspace click
-// ══════════════════════════════════════════
-const uploadZone  = document.getElementById('upload-zone');
-const fileInputP  = document.getElementById('file-input');       // panel input
-const fileInputWS = document.getElementById('file-input-ws');    // workspace input
-const workspace   = document.getElementById('workspace');
-const wsOverlay   = document.getElementById('ws-drop-overlay');
-
-// Panel mini upload zone
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault(); uploadZone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
-fileInputP.addEventListener('change', () => { if (fileInputP.files[0]) handleFile(fileInputP.files[0]); });
-fileInputWS.addEventListener('change', () => { if (fileInputWS.files[0]) handleFile(fileInputWS.files[0]); });
-
-// Workspace-wide drag target (shows overlay, works even after canvas is visible)
-let dragCounter = 0;
-workspace.addEventListener('dragenter', e => {
-  e.preventDefault();
-  dragCounter++;
-  wsOverlay.classList.add('active');
-});
-workspace.addEventListener('dragleave', () => {
-  dragCounter--;
-  if (dragCounter <= 0) { dragCounter = 0; wsOverlay.classList.remove('active'); }
-});
-workspace.addEventListener('dragover', e => e.preventDefault());
-workspace.addEventListener('drop', e => {
-  e.preventDefault();
-  dragCounter = 0; wsOverlay.classList.remove('active');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
-
-async function handleFile(file) {
-  if (!file.name.toLowerCase().endsWith('.pdf')) { toast('Only PDF files are supported', 'error'); return; }
-
-  // Update panel badge
-  document.getElementById('file-name-display').textContent = file.name;
-  document.getElementById('file-badge').classList.add('show');
-
-  setStatus('active', 'Uploading…');
-  setStep(1, 'active');
-
-  const fd = new FormData();
-  fd.append('file', file);
-
-  try {
-    const res  = await fetch('/api/upload', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Upload failed');
-
-    state.sessionId = data.session_id;
-
-    setStatus('active', `${data.page_count} page${data.page_count > 1 ? 's' : ''} loaded`);
-    setStep(1, 'done'); setStep(2, 'active');
-
-    unlock('layout-section', 'sec2-lbl');
-    unlock('pagesize-section', 'sec3-lbl');
-    unlock('margin-section', 'sec4-lbl');
-
-    showCanvas(data.preview, data.preview_w, data.preview_h);
-    buildGridButtons();
-    document.querySelector('.grid-btn[data-val="auto"]')?.classList.add('active');
-
-    toast(`Loaded ${data.page_count} pages`, 'success');
-  } catch (err) {
-    setStatus('error', 'Upload failed');
-    toast(err.message, 'error');
-  }
-}
-
-function unlock(sectionId, lblId) {
-  document.getElementById(sectionId).classList.remove('locked');
-  document.getElementById(lblId).classList.add('unlocked');
-}
-
-// ══════════════════════════════════════════
-//  CANVAS  —  ZOOM + PAN + CROP
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  CANVAS — ZOOM + PAN + CROP
+// ═══════════════════════════════════════════════════════
 const canvas = document.getElementById('preview-canvas');
 const ctx    = canvas.getContext('2d');
-let img = null;
-let cropPixels = null;
-
-// view transform
+let img = null, cropPixels = null;
 let vZoom = 1, vPanX = 0, vPanY = 0;
-const ZOOM_MIN = 0.15, ZOOM_MAX = 16;
-
-// interaction state
+const ZOOM_MIN = 0.1, ZOOM_MAX = 16;
 let drawing = false, panning = false, spaceDown = false;
 let startImgX = 0, startImgY = 0;
 let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
 
 function cssToCanvas(e) {
   const r = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - r.left) * (canvas.width  / r.width),
-    y: (e.clientY - r.top)  * (canvas.height / r.height),
-  };
+  return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) };
 }
 function canvasToImg(cx, cy) { return { x: (cx - vPanX) / vZoom, y: (cy - vPanY) / vZoom }; }
 function cssToImg(e) { const c = cssToCanvas(e); return canvasToImg(c.x, c.y); }
-
 function clampPan() {
   if (!img) return;
   const mg = 80;
   vPanX = Math.min(canvas.width  - mg, Math.max(mg - img.width  * vZoom, vPanX));
   vPanY = Math.min(canvas.height - mg, Math.max(mg - img.height * vZoom, vPanY));
 }
-
 function fitView() {
   if (!img) return;
   vZoom = Math.min(canvas.width / img.width, canvas.height / img.height) * 0.92;
@@ -935,344 +636,218 @@ function fitView() {
   vPanY = (canvas.height - img.height * vZoom) / 2;
 }
 
-function showCanvas(previewDataUrl, prevW, prevH) {
+function showCanvas(previewDataUrl) {
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('result-area').style.display = 'none';
-
   const area = document.getElementById('canvas-area');
-  area.style.display = 'flex';
-  area.style.flexDirection = 'column';
-
+  area.style.display = 'flex'; area.style.flexDirection = 'column';
   img = new Image();
-  img.onload = () => {
-    resizeCanvasToOuter();
-    fitView();
-    drawCanvas();
-    updateZoomBadge();
-  };
+  img.onload = () => { resizeCanvasToOuter(); fitView(); drawCanvas(); updateZoomBadge(); };
   img.src = previewDataUrl;
 }
-
 function resizeCanvasToOuter() {
-  const outer = document.getElementById('canvas-outer');
-  const r = outer.getBoundingClientRect();
-  canvas.width  = Math.round(r.width);
-  canvas.height = Math.round(r.height);
-  canvas.style.width  = canvas.width  + 'px';
-  canvas.style.height = canvas.height + 'px';
+  const r = document.getElementById('canvas-outer').getBoundingClientRect();
+  canvas.width = Math.round(r.width); canvas.height = Math.round(r.height);
+  canvas.style.width = canvas.width + 'px'; canvas.style.height = canvas.height + 'px';
 }
-
-// Handle window resize while canvas is shown
 window.addEventListener('resize', () => {
   if (!img || document.getElementById('canvas-area').style.display === 'none') return;
-  resizeCanvasToOuter();
-  clampPan();
-  drawCanvas();
+  resizeCanvasToOuter(); clampPan(); drawCanvas();
 });
 
 function drawCanvas(liveRect) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // dot-grid background
-  ctx.fillStyle = '#0e0e0e';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.save();
-  ctx.translate(vPanX, vPanY);
-  ctx.scale(vZoom, vZoom);
-
-  // shadow under image
-  ctx.shadowColor = 'rgba(0,0,0,.6)';
-  ctx.shadowBlur = 24 / vZoom;
-  ctx.drawImage(img, 0, 0);
-  ctx.shadowBlur = 0;
-
+  ctx.fillStyle = '#0e0e0e'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save(); ctx.translate(vPanX, vPanY); ctx.scale(vZoom, vZoom);
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 24 / vZoom;
+  ctx.drawImage(img, 0, 0); ctx.shadowBlur = 0;
   const active = liveRect || cropPixels;
   if (active) {
     const { x1, y1, x2, y2 } = active;
     const w = x2 - x1, h = y2 - y1;
-
-    ctx.fillStyle = 'rgba(0,0,0,.55)';
-    ctx.fillRect(0, 0, img.width, img.height);
-
-    ctx.clearRect(x1, y1, w, h);
-    ctx.drawImage(img, x1, y1, w, h, x1, y1, w, h);
-
-    // animated dashed border
-    ctx.strokeStyle = '#c8f03d';
-    ctx.lineWidth = 1.5 / vZoom;
-    ctx.setLineDash([6 / vZoom, 3 / vZoom]);
-    ctx.strokeRect(x1, y1, w, h);
-    ctx.setLineDash([]);
-
-    // corner handles
+    ctx.fillStyle = 'rgba(0,0,0,.52)'; ctx.fillRect(0, 0, img.width, img.height);
+    ctx.clearRect(x1, y1, w, h); ctx.drawImage(img, x1, y1, w, h, x1, y1, w, h);
+    ctx.strokeStyle = '#c8f03d'; ctx.lineWidth = 1.5 / vZoom;
+    ctx.setLineDash([6 / vZoom, 3 / vZoom]); ctx.strokeRect(x1, y1, w, h); ctx.setLineDash([]);
     const hs = 7 / vZoom;
     ctx.fillStyle = '#c8f03d';
-    [[x1,y1],[x2,y1],[x1,y2],[x2,y2]].forEach(([hx,hy]) =>
-      ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs));
-
-    // dim label
-    ctx.font = `bold ${11/vZoom}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#c8f03d';
+    [[x1,y1],[x2,y1],[x1,y2],[x2,y2]].forEach(([hx,hy]) => ctx.fillRect(hx-hs/2, hy-hs/2, hs, hs));
+    ctx.font = `bold ${11/vZoom}px 'IBM Plex Mono',monospace`;
     const dim = `${Math.round(w)} × ${Math.round(h)} px`;
     const tw = ctx.measureText(dim).width;
-    const lx = x1 + w/2 - tw/2;
-    const ly = y2 + 16/vZoom;
-    ctx.fillStyle = 'rgba(0,0,0,.7)';
-    ctx.fillRect(lx - 4/vZoom, ly - 11/vZoom, tw + 8/vZoom, 14/vZoom);
-    ctx.fillStyle = '#c8f03d';
-    ctx.fillText(dim, lx, ly);
+    const lx = x1 + w/2 - tw/2, ly = y2 + 16/vZoom;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(lx-4/vZoom, ly-11/vZoom, tw+8/vZoom, 14/vZoom);
+    ctx.fillStyle = '#c8f03d'; ctx.fillText(dim, lx, ly);
   }
-
   ctx.restore();
 }
-
-function updateZoomBadge() {
-  document.getElementById('zoom-pct').textContent = Math.round(vZoom * 100) + '%';
-}
-
+function updateZoomBadge() { document.getElementById('zoom-pct').textContent = Math.round(vZoom * 100) + '%'; }
 function zoomAt(cx, cy, factor) {
   const nz = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, vZoom * factor));
-  const r  = nz / vZoom;
-  vPanX = cx - r * (cx - vPanX);
-  vPanY = cy - r * (cy - vPanY);
-  vZoom = nz;
+  vPanX = cx - (nz/vZoom)*(cx-vPanX); vPanY = cy - (nz/vZoom)*(cy-vPanY); vZoom = nz;
   clampPan(); drawCanvas(); updateZoomBadge();
 }
 
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const c = cssToCanvas(e);
-  zoomAt(c.x, c.y, e.deltaY < 0 ? 1.12 : 1/1.12);
-}, { passive: false });
-
-document.getElementById('zoom-in-btn').addEventListener('click', () => zoomAt(canvas.width/2, canvas.height/2, 1.4));
+canvas.addEventListener('wheel', e => { e.preventDefault(); const c = cssToCanvas(e); zoomAt(c.x, c.y, e.deltaY < 0 ? 1.12 : 1/1.12); }, { passive: false });
+document.getElementById('zoom-in-btn').addEventListener('click',  () => zoomAt(canvas.width/2, canvas.height/2, 1.4));
 document.getElementById('zoom-out-btn').addEventListener('click', () => zoomAt(canvas.width/2, canvas.height/2, 1/1.4));
 document.getElementById('zoom-fit-btn').addEventListener('click', () => { fitView(); drawCanvas(); updateZoomBadge(); });
 document.getElementById('zoom-100-btn').addEventListener('click', () => {
-  vZoom = 1;
-  vPanX = (canvas.width - img.width) / 2;
-  vPanY = (canvas.height - img.height) / 2;
+  vZoom = 1; vPanX = (canvas.width-img.width)/2; vPanY = (canvas.height-img.height)/2;
   clampPan(); drawCanvas(); updateZoomBadge();
 });
 
-window.addEventListener('keydown', e => { if (e.code === 'Space') { spaceDown = true; if (!drawing) canvas.style.cursor = 'grab'; } });
-window.addEventListener('keyup',   e => { if (e.code === 'Space') { spaceDown = false; canvas.style.cursor = 'crosshair'; } });
+window.addEventListener('keydown', e => { if (e.code==='Space') { spaceDown=true; if(!drawing) canvas.style.cursor='grab'; }});
+window.addEventListener('keyup',   e => { if (e.code==='Space') { spaceDown=false; canvas.style.cursor='crosshair'; }});
 
 canvas.addEventListener('mousedown', e => {
   if (!img) return; e.preventDefault();
-  const isPan = e.button === 1 || e.button === 2 || spaceDown || e.altKey;
-  if (isPan) {
-    panning = true;
-    panStartX = e.clientX; panStartY = e.clientY;
-    panStartPanX = vPanX; panStartPanY = vPanY;
-    canvas.style.cursor = 'grabbing'; return;
-  }
-  drawing = true;
+  const isPan = e.button===1 || e.button===2 || spaceDown || e.altKey;
+  if (isPan) { panning=true; panStartX=e.clientX; panStartY=e.clientY; panStartPanX=vPanX; panStartPanY=vPanY; canvas.style.cursor='grabbing'; return; }
+  drawing=true;
   const ip = cssToImg(e);
   startImgX = Math.max(0, Math.min(img.width,  ip.x));
   startImgY = Math.max(0, Math.min(img.height, ip.y));
-  cropPixels = null;
-  document.getElementById('confirm-crop-btn').disabled = true;
-  document.getElementById('canvas-hint').textContent = 'Release to set region';
+  cropPixels=null; document.getElementById('confirm-crop-btn').disabled=true;
+  document.getElementById('canvas-hint').textContent='Release to set region';
 });
-
 canvas.addEventListener('mousemove', e => {
   if (!img) return;
-  if (panning) {
-    vPanX = panStartPanX + (e.clientX - panStartX);
-    vPanY = panStartPanY + (e.clientY - panStartY);
-    clampPan(); drawCanvas(); return;
-  }
+  if (panning) { vPanX=panStartPanX+(e.clientX-panStartX); vPanY=panStartPanY+(e.clientY-panStartY); clampPan(); drawCanvas(); return; }
   if (drawing) {
-    const ip = cssToImg(e);
-    const ix = Math.max(0, Math.min(img.width,  ip.x));
-    const iy = Math.max(0, Math.min(img.height, ip.y));
-    drawCanvas({ x1: Math.min(startImgX,ix), y1: Math.min(startImgY,iy), x2: Math.max(startImgX,ix), y2: Math.max(startImgY,iy) });
+    const ip=cssToImg(e);
+    const ix=Math.max(0,Math.min(img.width,ip.x)), iy=Math.max(0,Math.min(img.height,ip.y));
+    drawCanvas({x1:Math.min(startImgX,ix),y1:Math.min(startImgY,iy),x2:Math.max(startImgX,ix),y2:Math.max(startImgY,iy)});
   }
 });
-
 canvas.addEventListener('mouseup', e => {
   if (!img) return;
-  if (panning) {
-    panning = false; canvas.style.cursor = spaceDown ? 'grab' : 'crosshair'; return;
-  }
-  if (!drawing) return;
-  drawing = false;
-  const ip = cssToImg(e);
-  const ix = Math.max(0, Math.min(img.width,  ip.x));
-  const iy = Math.max(0, Math.min(img.height, ip.y));
-  const x1 = Math.min(startImgX,ix), y1 = Math.min(startImgY,iy);
-  const x2 = Math.max(startImgX,ix), y2 = Math.max(startImgY,iy);
-  if ((x2-x1) < 5 || (y2-y1) < 5) {
-    drawCanvas(); cropPixels = null;
-    document.getElementById('canvas-hint').textContent = 'Click and drag to select the label area';
-    return;
-  }
-  cropPixels = { x1, y1, x2, y2 };
-  drawCanvas();
-  document.getElementById('confirm-crop-btn').disabled = false;
-  document.getElementById('canvas-hint').textContent = `${Math.round(x2-x1)} × ${Math.round(y2-y1)} px selected — confirm or redraw`;
+  if (panning) { panning=false; canvas.style.cursor=spaceDown?'grab':'crosshair'; return; }
+  if (!drawing) return; drawing=false;
+  const ip=cssToImg(e);
+  const ix=Math.max(0,Math.min(img.width,ip.x)), iy=Math.max(0,Math.min(img.height,ip.y));
+  const x1=Math.min(startImgX,ix), y1=Math.min(startImgY,iy), x2=Math.max(startImgX,ix), y2=Math.max(startImgY,iy);
+  if ((x2-x1)<5||(y2-y1)<5) { drawCanvas(); cropPixels=null; document.getElementById('canvas-hint').textContent='Click and drag to select the label area'; return; }
+  cropPixels={x1,y1,x2,y2}; drawCanvas();
+  document.getElementById('confirm-crop-btn').disabled=false;
+  document.getElementById('canvas-hint').textContent=`${Math.round(x2-x1)} × ${Math.round(y2-y1)} px — confirm or redraw`;
 });
-
-canvas.addEventListener('mouseleave', e => {
-  if (drawing) canvas.dispatchEvent(new MouseEvent('mouseup', { clientX: e.clientX, clientY: e.clientY }));
-});
+canvas.addEventListener('mouseleave', e => { if (drawing) canvas.dispatchEvent(new MouseEvent('mouseup',{clientX:e.clientX,clientY:e.clientY})); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-// Touch
-let lastTouches = [];
+let lastTouches=[];
 canvas.addEventListener('touchstart', e => {
-  e.preventDefault(); lastTouches = Array.from(e.touches);
-  if (e.touches.length === 1) {
-    const t = e.touches[0];
-    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY }));
-  } else if (drawing) { drawing = false; drawCanvas(); }
-}, { passive: false });
-
+  e.preventDefault(); lastTouches=Array.from(e.touches);
+  if (e.touches.length===1) { const t=e.touches[0]; canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:t.clientX,clientY:t.clientY})); }
+  else if (drawing) { drawing=false; drawCanvas(); }
+}, {passive:false});
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  if (e.touches.length === 1 && drawing) {
-    const t = e.touches[0];
-    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY }));
-  } else if (e.touches.length === 2) {
-    const [a, b] = Array.from(e.touches);
-    const [la, lb] = lastTouches.length >= 2 ? lastTouches : [a, b];
-    const prev = Math.hypot(la.clientX-lb.clientX, la.clientY-lb.clientY);
-    const curr = Math.hypot(a.clientX-b.clientX,   a.clientY-b.clientY);
-    const r = canvas.getBoundingClientRect();
-    const mx = (a.clientX+b.clientX)/2, my = (a.clientY+b.clientY)/2;
-    const cx = (mx-r.left)*(canvas.width/r.width), cy = (my-r.top)*(canvas.height/r.height);
-    if (prev > 0) zoomAt(cx, cy, curr/prev);
-    const pmx = (la.clientX+lb.clientX)/2, pmy = (la.clientY+lb.clientY)/2;
-    vPanX += (mx-pmx); vPanY += (my-pmy);
-    clampPan(); drawCanvas(); updateZoomBadge();
+  if (e.touches.length===1&&drawing) { const t=e.touches[0]; canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY})); }
+  else if (e.touches.length===2) {
+    const [a,b]=Array.from(e.touches), [la,lb]=lastTouches.length>=2?lastTouches:[a,b];
+    const prev=Math.hypot(la.clientX-lb.clientX,la.clientY-lb.clientY);
+    const curr=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const r=canvas.getBoundingClientRect();
+    const mx=(a.clientX+b.clientX)/2, my=(a.clientY+b.clientY)/2;
+    const cx=(mx-r.left)*(canvas.width/r.width), cy=(my-r.top)*(canvas.height/r.height);
+    if (prev>0) zoomAt(cx,cy,curr/prev);
+    const pmx=(la.clientX+lb.clientX)/2, pmy=(la.clientY+lb.clientY)/2;
+    vPanX+=(mx-pmx); vPanY+=(my-pmy); clampPan(); drawCanvas(); updateZoomBadge();
   }
-  lastTouches = Array.from(e.touches);
-}, { passive: false });
-
+  lastTouches=Array.from(e.touches);
+},{passive:false});
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
-  if (e.touches.length === 0 && drawing) {
-    const t = e.changedTouches[0];
-    canvas.dispatchEvent(new MouseEvent('mouseup', { clientX: t.clientX, clientY: t.clientY }));
-  }
-  lastTouches = Array.from(e.touches);
-}, { passive: false });
+  if (e.touches.length===0&&drawing) { const t=e.changedTouches[0]; canvas.dispatchEvent(new MouseEvent('mouseup',{clientX:t.clientX,clientY:t.clientY})); }
+  lastTouches=Array.from(e.touches);
+},{passive:false});
 
 document.getElementById('clear-crop-btn').addEventListener('click', () => {
-  cropPixels = null;
-  document.getElementById('confirm-crop-btn').disabled = true;
-  document.getElementById('canvas-hint').textContent = 'Click and drag to select the label area';
+  cropPixels=null; document.getElementById('confirm-crop-btn').disabled=true;
+  document.getElementById('canvas-hint').textContent='Click and drag to select the label area';
   if (img) drawCanvas();
 });
-
 document.getElementById('confirm-crop-btn').addEventListener('click', () => {
   if (!cropPixels) return;
-  state.cropRect  = cropPixels;
-  state.confirmed = true;
-
-  unlock('generate-section', 'sec5-lbl');
-  document.getElementById('generate-btn').disabled = false;
-  setStep(2, 'done'); setStep(3, 'active');
-
-  document.getElementById('canvas-hint').textContent = '✓ Region confirmed — adjust settings and generate';
-  document.getElementById('canvas-hint').style.borderColor = 'var(--success)';
-  document.getElementById('canvas-hint').style.color = 'var(--success)';
-  document.getElementById('confirm-crop-btn').textContent = '✓ Confirmed';
-  document.getElementById('confirm-crop-btn').disabled = true;
-
-  toast('Crop region confirmed', 'success');
+  state.cropRect=cropPixels; state.confirmed=true;
+  unlock('generate-section','sec5-lbl');
+  document.getElementById('generate-btn').disabled=false;
+  setStep(2,'done'); setStep(3,'active');
+  const hint=document.getElementById('canvas-hint');
+  hint.textContent='✓ Region confirmed — adjust settings and generate';
+  hint.style.color='var(--success)'; hint.style.borderColor='var(--success)';
+  document.getElementById('confirm-crop-btn').textContent='✓ Confirmed';
+  document.getElementById('confirm-crop-btn').disabled=true;
+  toast('Crop region confirmed','success');
 });
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 //  GENERATE
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 document.getElementById('generate-btn').addEventListener('click', async () => {
   if (!state.sessionId || !state.confirmed) return;
 
   let ipp = state.itemsPerPage === 'auto' ? 0
-          : state.itemsPerPage === 'custom' ? (parseInt(document.getElementById('custom-count').value) || 4)
+          : state.itemsPerPage === 'custom' ? (parseInt(document.getElementById('custom-count').value)||4)
           : state.itemsPerPage;
 
   const payload = {
-    session_id:    state.sessionId,
-    crop:          { x1: Math.round(state.cropRect.x1), y1: Math.round(state.cropRect.y1),
-                     x2: Math.round(state.cropRect.x2), y2: Math.round(state.cropRect.y2) },
+    session_id:     state.sessionId,
+    crop:           { x1:Math.round(state.cropRect.x1), y1:Math.round(state.cropRect.y1),
+                      x2:Math.round(state.cropRect.x2), y2:Math.round(state.cropRect.y2) },
     items_per_page: ipp,
-    margin_mm:     parseFloat(document.getElementById('margin-slider').value),
-    gap_mm:        parseFloat(document.getElementById('gap-slider').value),
-    page_size:     state.pageSize,
+    margin_mm:      parseFloat(document.getElementById('margin-slider').value),
+    gap_mm:         parseFloat(document.getElementById('gap-slider').value),
+    page_size:      state.pageSize,
   };
-  if (state.pageSize === 'Custom') {
-    payload.custom_w_in = parseFloat(document.getElementById('custom-pw').value) || 8.5;
-    payload.custom_h_in = parseFloat(document.getElementById('custom-ph').value) || 11;
+  if (state.pageSize==='Custom') {
+    payload.custom_w_in = parseFloat(document.getElementById('custom-pw').value)||8.5;
+    payload.custom_h_in = parseFloat(document.getElementById('custom-ph').value)||11;
   }
 
-  setStatus('active', 'Generating…');
-  document.getElementById('generate-btn').disabled = true;
-  const fill = document.getElementById('progress-fill');
+  setStatus('active','Generating…');
+  document.getElementById('generate-btn').disabled=true;
+  const fill=document.getElementById('progress-fill');
   fill.classList.add('indeterminate');
 
   try {
-    // Single request — server returns stats + PDF as base64 in one JSON response.
-    // No second fetch, no custom headers, works through any proxy.
-    const res = await fetch('/api/process', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
+    const res  = await fetch('/api/process', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Processing failed');
+    if (!res.ok) throw new Error(data.error||'Processing failed');
 
-    // Decode base64 PDF → Blob entirely in the browser
-    const binary = atob(data.pdf_b64);
-    const bytes  = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    state.pdfBlob    = new Blob([bytes], { type: 'application/pdf' });
-    state.downloadAs = data.filename || `shipsheet_${state.pageSize.toLowerCase()}.pdf`;
-    state.sessionId  = null;
+    const binary=atob(data.pdf_b64), bytes=new Uint8Array(binary.length);
+    for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    state.pdfBlob   =new Blob([bytes],{type:'application/pdf'});
+    state.downloadAs=data.filename||'shipsheet.pdf';
+    state.sessionId =null;
 
-    fill.classList.remove('indeterminate');
-    fill.style.width = '100%';
-    setStatus('success', 'Ready to download');
-    setStep(3, 'done');
+    fill.classList.remove('indeterminate'); fill.style.width='100%';
+    setStatus('success','Ready to download'); setStep(3,'done');
 
-    // Update result panel
-    document.getElementById('res-labels').textContent = data.total_labels;
-    document.getElementById('res-pages').textContent  = data.output_pages;
-    document.getElementById('res-layout').textContent = `${data.cols}×${data.rows}`;
-    document.getElementById('res-note').textContent   =
-      `${data.items_per_page} labels/page · ${data.page_size} · ${data.cols}col × ${data.rows}row`;
+    document.getElementById('res-labels').textContent=data.total_labels;
+    document.getElementById('res-pages').textContent =data.output_pages;
+    document.getElementById('res-layout').textContent=`${data.cols}×${data.rows}`;
+    document.getElementById('res-note').textContent  =`${data.items_per_page} labels/page · ${data.page_size} · ${data.cols}col × ${data.rows}row`;
 
-    // Switch workspace view
-    document.getElementById('canvas-area').style.display = 'none';
-    document.getElementById('result-area').style.display = 'flex';
-    document.getElementById('panel-download').style.display = 'block';
-
-    toast('✓ PDF ready', 'success');
-  } catch (err) {
-    fill.classList.remove('indeterminate');
-    fill.style.width = '0%';
-    document.getElementById('generate-btn').disabled = false;
-    setStatus('error', err.message);
-    toast(err.message, 'error');
+    document.getElementById('canvas-area').style.display='none';
+    document.getElementById('result-area').style.display='flex';
+    document.getElementById('panel-download').style.display='block';
+    toast('✓ PDF ready','success');
+  } catch(err) {
+    fill.classList.remove('indeterminate'); fill.style.width='0%';
+    document.getElementById('generate-btn').disabled=false;
+    setStatus('error',err.message); toast(err.message,'error');
   }
 });
 
 function triggerDownload() {
   if (!state.pdfBlob) return;
-  const url = URL.createObjectURL(state.pdfBlob);
-  const a   = document.createElement('a');
-  a.href    = url;
-  a.download = state.downloadAs || 'shipsheet.pdf';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const url=URL.createObjectURL(state.pdfBlob);
+  const a=document.createElement('a'); a.href=url; a.download=state.downloadAs;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-
 function triggerReset() { location.reload(); }
 
 document.getElementById('download-btn').addEventListener('click', triggerDownload);
@@ -1280,32 +855,28 @@ document.getElementById('download-btn-result').addEventListener('click', trigger
 document.getElementById('reset-btn').addEventListener('click', triggerReset);
 document.getElementById('reset-btn-result').addEventListener('click', triggerReset);
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 //  HELPERS
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 function setStatus(type, text) {
-  document.getElementById('status-dot').className = 'status-dot ' +
-    { idle: 'dot-idle', active: 'dot-active', success: 'dot-success', error: 'dot-error' }[type];
-  document.getElementById('status-text').textContent = text;
+  document.getElementById('status-dot').className='status-dot '+
+    {idle:'dot-idle',active:'dot-active',success:'dot-success',error:'dot-error'}[type];
+  document.getElementById('status-text').textContent=text;
 }
-
-function setStep(n, s) {
-  document.getElementById(`step${n}`).className = 'step-item ' + s;
+function setStep(n,s) { document.getElementById(`step${n}`).className='step-item '+s; }
+function unlock(sectionId, lblId) {
+  document.getElementById(sectionId).classList.remove('locked');
+  document.getElementById(lblId).classList.add('unlocked');
 }
-
 let toastTimer;
-function toast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+function toast(msg,type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='',3200);
 }
 
-// ══════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════
-buildGridButtons();
-setStatus('idle', 'Waiting for PDF');
+// INIT
+setStatus('idle','Waiting for PDF');
 </script>
 </body>
 </html>
