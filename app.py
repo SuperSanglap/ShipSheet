@@ -15,12 +15,6 @@ app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 PREVIEW_SCALE = 1.0
 EXPORT_SCALE  = 4.0
 
-# sessions[session_id] = {
-#   'pdfs': [ {'bytes': bytes, 'name': str, 'page_count': int}, ... ],
-#   'preview_w': int, 'preview_h': int,   ← from first PDF first page
-# }
-sessions = {}
-
 PAGE_SIZES = {
     'A3':     A3,
     'A4':     A4,
@@ -31,10 +25,8 @@ PAGE_SIZES = {
     'Custom': None,
 }
 
-
 def in_to_pt(i): return i * 72.0
 def mm_to_pt(m): return m * 2.83465
-
 
 def find_best_layout(ipp, img_w, img_h, page_w, page_h, margin, gap):
     usable_w = page_w - 2 * margin
@@ -63,11 +55,9 @@ def index():
 @app.route('/api/upload', methods=['POST'])
 def upload_pdf():
     """
-    Add one PDF to a session.
-    Pass session_id in form data to append to an existing session.
-    Omit it (or pass empty) to start a new session.
-    Returns session_id, file_id, page_count for this file, total_pages across
-    all files, and (on first upload) a base64 preview of page 1.
+    Receive one PDF file. Extract page count and (optionally) a preview image.
+    Return the PDF bytes as base64 to be stored in the browser.
+    The server stores nothing — zero session state.
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -76,97 +66,55 @@ def upload_pdf():
     if not f.filename.lower().endswith('.pdf'):
         return jsonify({'error': 'File must be a PDF'}), 400
 
-    session_id = request.form.get('session_id', '').strip() or None
+    is_first = request.form.get('is_first', 'false').lower() == 'true'
 
     pdf_bytes = f.read()
     try:
         pdf        = fitz.open(stream=pdf_bytes, filetype='pdf')
         page_count = len(pdf)
-        first_pix  = pdf[0].get_pixmap(matrix=fitz.Matrix(PREVIEW_SCALE, PREVIEW_SCALE))
+        preview_b64 = None
+        if is_first:
+            pix = pdf[0].get_pixmap(matrix=fitz.Matrix(PREVIEW_SCALE, PREVIEW_SCALE))
+            preview_b64 = base64.b64encode(pix.tobytes('png')).decode('utf-8')
         pdf.close()
     except Exception as e:
         return jsonify({'error': f'Could not read PDF: {e}'}), 400
 
-    # Create or retrieve session
-    if session_id and session_id in sessions:
-        sess = sessions[session_id]
-    else:
-        session_id = str(uuid.uuid4())
-        preview_b64 = base64.b64encode(first_pix.tobytes('png')).decode('utf-8')
-        sess = {
-            'pdfs':      [],
-            'preview':   f'data:image/png;base64,{preview_b64}',
-            'preview_w': first_pix.width,
-            'preview_h': first_pix.height,
-        }
-        sessions[session_id] = sess
-
-    file_id = str(uuid.uuid4())
-    sess['pdfs'].append({
-        'file_id':    file_id,
-        'name':       f.filename,
-        'bytes':      pdf_bytes,
-        'page_count': page_count,
-    })
-
-    total_pages = sum(p['page_count'] for p in sess['pdfs'])
+    # Send the PDF bytes back to the browser as base64 — browser owns the data
+    pdf_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
 
     resp = {
-        'session_id':  session_id,
-        'file_id':     file_id,
-        'name':        f.filename,
-        'page_count':  page_count,
-        'total_pages': total_pages,
-        'file_count':  len(sess['pdfs']),
+        'file_id':    str(uuid.uuid4()),
+        'name':       f.filename,
+        'page_count': page_count,
+        'pdf_b64':    pdf_b64,          # browser stores this
     }
-    # Only include preview on first upload
-    if len(sess['pdfs']) == 1:
-        resp['preview']   = sess['preview']
-        resp['preview_w'] = sess['preview_w']
-        resp['preview_h'] = sess['preview_h']
+    if preview_b64:
+        resp['preview']   = f'data:image/png;base64,{preview_b64}'
+        resp['preview_w'] = pix.width
+        resp['preview_h'] = pix.height
 
     return jsonify(resp)
 
 
-@app.route('/api/remove_file', methods=['POST'])
-def remove_file():
-    """Remove one PDF from a session by file_id."""
-    data       = request.json or {}
-    session_id = data.get('session_id')
-    file_id    = data.get('file_id')
-
-    if not session_id or session_id not in sessions:
-        return jsonify({'error': 'Session not found'}), 404
-
-    sess = sessions[session_id]
-    before = len(sess['pdfs'])
-    sess['pdfs'] = [p for p in sess['pdfs'] if p['file_id'] != file_id]
-
-    if len(sess['pdfs']) == before:
-        return jsonify({'error': 'File not found'}), 404
-
-    total_pages = sum(p['page_count'] for p in sess['pdfs'])
-    return jsonify({'total_pages': total_pages, 'file_count': len(sess['pdfs'])})
-
-
 @app.route('/api/process', methods=['POST'])
 def process():
+    """
+    Fully stateless. The browser sends all PDF bytes (as base64 list) with the request.
+    Server processes and returns the output PDF as base64. Nothing is stored anywhere.
+    """
     data      = request.json or {}
-    session_id = data.get('session_id')
-    crop       = data.get('crop')
-    ipp        = int(data.get('items_per_page', 0))
-    margin_mm  = float(data.get('margin_mm', 3))
-    gap_mm     = float(data.get('gap_mm', 1))
-    page_size  = data.get('page_size', 'A4')
-    custom_w   = data.get('custom_w_in')
-    custom_h   = data.get('custom_h_in')
+    pdfs_b64  = data.get('pdfs', [])       # [{ file_id, name, pdf_b64, page_count }, ...]
+    crop      = data.get('crop')
+    ipp       = int(data.get('items_per_page', 0))
+    margin_mm = float(data.get('margin_mm', 3))
+    gap_mm    = float(data.get('gap_mm', 1))
+    page_size = data.get('page_size', 'A4')
+    custom_w  = data.get('custom_w_in')
+    custom_h  = data.get('custom_h_in')
 
-    if not session_id or session_id not in sessions:
-        return jsonify({'error': 'Session not found — please re-upload your PDF(s)'}), 404
-
-    sess = sessions[session_id]
-    if not sess['pdfs']:
-        return jsonify({'error': 'No files in session'}), 400
+    if not pdfs_b64:
+        return jsonify({'error': 'No PDF data provided — please re-upload your files'}), 400
     if not crop:
         return jsonify({'error': 'No crop region provided'}), 400
 
@@ -188,12 +136,13 @@ def process():
     if rx2 <= rx1 or ry2 <= ry1:
         return jsonify({'error': 'Invalid crop region — please redraw the selection'}), 400
 
-    # Crop every page of every PDF in order
+    # Decode and crop every page of every PDF
     cropped_images = []
     export_mat = fitz.Matrix(EXPORT_SCALE, EXPORT_SCALE)
     try:
-        for pdf_entry in sess['pdfs']:
-            pdf = fitz.open(stream=pdf_entry['bytes'], filetype='pdf')
+        for entry in pdfs_b64:
+            pdf_bytes = base64.b64decode(entry['pdf_b64'])
+            pdf = fitz.open(stream=pdf_bytes, filetype='pdf')
             for page_num in range(len(pdf)):
                 pix   = pdf[page_num].get_pixmap(matrix=export_mat, alpha=False)
                 image = Image.open(io.BytesIO(pix.tobytes('png')))
@@ -203,6 +152,9 @@ def process():
         return jsonify({'error': f'PDF processing error: {e}'}), 500
 
     total = len(cropped_images)
+    if total == 0:
+        return jsonify({'error': 'No pages found in uploaded files'}), 400
+
     img_w, img_h = cropped_images[0].size
     if img_w == 0 or img_h == 0:
         return jsonify({'error': 'Crop region is empty — please redraw the selection'}), 400
@@ -224,7 +176,7 @@ def process():
     try:
         buf        = io.BytesIO()
         pdf_canvas = canvas.Canvas(buf, pagesize=(page_w, page_h))
-        idx        = 0
+        idx = 0
         while idx < total:
             for i, image in enumerate(cropped_images[idx:idx + ipp]):
                 row, col = divmod(i, cols)
@@ -239,14 +191,12 @@ def process():
                 pdf_canvas.showPage()
         pdf_canvas.save()
         buf.seek(0)
-        pdf_b64 = base64.b64encode(buf.read()).decode('utf-8')
+        out_b64 = base64.b64encode(buf.read()).decode('utf-8')
     except Exception as e:
         return jsonify({'error': f'PDF generation error: {e}'}), 500
 
-    del sessions[session_id]
-
     return jsonify({
-        'pdf_b64':        pdf_b64,
+        'pdf_b64':        out_b64,
         'filename':       f'shipsheet_{page_size.lower()}.pdf',
         'total_labels':   total,
         'items_per_page': ipp,
@@ -258,4 +208,4 @@ def process():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False)

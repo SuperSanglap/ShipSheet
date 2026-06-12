@@ -147,7 +147,7 @@
   /* ── SLIDERS ── */
   .slider-row { display: flex; align-items: center; gap: 8px; }
   .slider-row label { font-size: 11px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
-  .slider-row input[type=range] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--border2); border-radius: 2px; outline: none; }
+  .slider-row input[type=range] { flex: 1; height: 3px; background: var(--border2); border-radius: 2px; outline: none; }
   .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); cursor: pointer; }
   .slider-row .val { font-family: var(--mono); font-size: 10px; color: var(--accent); width: 34px; text-align: right; }
 
@@ -386,10 +386,11 @@
 //  STATE
 // ═══════════════════════════════════════════════════════
 const state = {
-  sessionId:    null,
-  files:        [],    // [{ file_id, name, page_count }]
+  // files holds everything the server needs — pdf_b64 is stored here in the browser,
+  // never on the server. The server is fully stateless.
+  files:        [],    // [{ file_id, name, page_count, pdf_b64 }]
   totalPages:   0,
-  cropRect:     null,  // IMAGE-space px
+  cropRect:     null,
   confirmed:    false,
   pdfBlob:      null,
   downloadAs:   'shipsheet.pdf',
@@ -429,20 +430,16 @@ workspace.addEventListener('drop', e => {
 async function handleFiles(files) {
   const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
   if (!pdfs.length) { toast('Only PDF files are supported', 'error'); return; }
-  // Upload one at a time so each file picks up the session_id from the previous
-  for (const file of pdfs) {
-    await uploadOne(file);
-  }
+  for (const file of pdfs) await uploadOne(file);
 }
 
 async function uploadOne(file) {
-  // Optimistically add to file list as "uploading"
-  const tempId  = 'tmp-' + Math.random().toString(36).slice(2);
-  const tempItem = addFileItem(tempId, file.name, '…', true);
+  const tempItem = addFileItem('tmp', file.name, '…', true);
 
   const fd = new FormData();
   fd.append('file', file);
-  if (state.sessionId) fd.append('session_id', state.sessionId);
+  // Tell server whether to generate a preview (only needed for the first file)
+  fd.append('is_first', state.files.length === 0 ? 'true' : 'false');
 
   setStatus('active', 'Uploading…');
 
@@ -451,26 +448,27 @@ async function uploadOne(file) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-    // Replace temp item with real one
-    tempItem.remove();
-    state.sessionId = data.session_id;
-    state.files.push({ file_id: data.file_id, name: data.name, page_count: data.page_count });
-    state.totalPages = data.total_pages;
-    addFileItem(data.file_id, data.name, data.page_count, false);
-    updateTotalBadge(data.file_count, data.total_pages);
+    // Store the pdf_b64 in the browser — server holds nothing
+    const entry = { file_id: data.file_id, name: data.name, page_count: data.page_count, pdf_b64: data.pdf_b64 };
+    state.files.push(entry);
+    state.totalPages += data.page_count;
 
-    // First file: show preview and unlock sections
+    tempItem.remove();
+    addFileItem(data.file_id, data.name, data.page_count, false);
+    updateTotalBadge(state.files.length, state.totalPages);
+
+    // First file only: show preview canvas and unlock controls
     if (data.preview) {
       unlock('layout-section',   'sec2-lbl');
       unlock('pagesize-section', 'sec3-lbl');
       unlock('margin-section',   'sec4-lbl');
       buildGridButtons();
       document.querySelector('.grid-btn[data-val="auto"]')?.classList.add('active');
-      showCanvas(data.preview, data.preview_w, data.preview_h);
+      showCanvas(data.preview);
       setStep(1, 'done'); setStep(2, 'active');
     }
 
-    setStatus('active', `${data.file_count} file${data.file_count > 1 ? 's' : ''} · ${data.total_pages} labels`);
+    setStatus('active', `${state.files.length} file${state.files.length > 1 ? 's' : ''} · ${state.totalPages} labels`);
     toast(`Added ${data.name}`, 'success');
   } catch (err) {
     tempItem.remove();
@@ -496,42 +494,26 @@ function addFileItem(fileId, name, pages, uploading) {
   return item;
 }
 
-async function removeFile(fileId, itemEl) {
-  if (!state.sessionId) return;
-  itemEl.style.opacity = '.4';
-  itemEl.style.pointerEvents = 'none';
-
-  try {
-    const res  = await fetch('/api/remove_file', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: state.sessionId, file_id: fileId }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    itemEl.remove();
-    state.files = state.files.filter(f => f.file_id !== fileId);
-    state.totalPages = data.total_pages;
-    updateTotalBadge(data.file_count, data.total_pages);
-    setStatus('active', `${data.file_count} file${data.file_count !== 1 ? 's' : ''} · ${data.total_pages} labels`);
-
-    if (data.file_count === 0) {
-      // Back to empty state
-      location.reload();
-    }
-  } catch (err) {
-    itemEl.style.opacity = '1';
-    itemEl.style.pointerEvents = 'auto';
-    toast(err.message, 'error');
+function removeFile(fileId, itemEl) {
+  // Pure client-side removal — no server call needed since server holds nothing
+  const entry = state.files.find(f => f.file_id === fileId);
+  if (!entry) return;
+  state.totalPages -= entry.page_count;
+  state.files = state.files.filter(f => f.file_id !== fileId);
+  itemEl.remove();
+  updateTotalBadge(state.files.length, state.totalPages);
+  if (state.files.length === 0) {
+    location.reload();
+  } else {
+    setStatus('active', `${state.files.length} file${state.files.length !== 1 ? 's' : ''} · ${state.totalPages} labels`);
   }
 }
 
 function updateTotalBadge(fileCount, totalPages) {
   const badge = document.getElementById('total-badge');
   badge.style.display = 'flex';
-  document.getElementById('total-files-label').textContent  = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
-  document.getElementById('total-pages-label').textContent  = `${totalPages} labels`;
+  document.getElementById('total-files-label').textContent = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
+  document.getElementById('total-pages-label').textContent = `${totalPages} labels`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -786,14 +768,15 @@ document.getElementById('confirm-crop-btn').addEventListener('click', () => {
 //  GENERATE
 // ═══════════════════════════════════════════════════════
 document.getElementById('generate-btn').addEventListener('click', async () => {
-  if (!state.sessionId || !state.confirmed) return;
+  if (!state.files.length || !state.confirmed) return;
 
   let ipp = state.itemsPerPage === 'auto' ? 0
           : state.itemsPerPage === 'custom' ? (parseInt(document.getElementById('custom-count').value)||4)
           : state.itemsPerPage;
 
+  // Send all PDF data directly — server is stateless, no session needed
   const payload = {
-    session_id:     state.sessionId,
+    pdfs:           state.files.map(f => ({ file_id: f.file_id, name: f.name, page_count: f.page_count, pdf_b64: f.pdf_b64 })),
     crop:           { x1:Math.round(state.cropRect.x1), y1:Math.round(state.cropRect.y1),
                       x2:Math.round(state.cropRect.x2), y2:Math.round(state.cropRect.y2) },
     items_per_page: ipp,
@@ -820,7 +803,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
     state.pdfBlob   =new Blob([bytes],{type:'application/pdf'});
     state.downloadAs=data.filename||'shipsheet.pdf';
-    state.sessionId =null;
 
     fill.classList.remove('indeterminate'); fill.style.width='100%';
     setStatus('success','Ready to download'); setStep(3,'done');
